@@ -380,7 +380,7 @@ body {
 }
 
 /* ==========================================================
-   iOS/Safari 完全対応・PDF印刷用スタイル
+   iOS/Safari 完全対応・PDF印刷用スタイル（重なり・崩れ修正版）
    ========================================================== */
 @media print {
   body {
@@ -396,6 +396,7 @@ body {
     padding: 0 !important;
     margin: 0 !important;
   }
+  /* 不要な要素を非表示 */
   .app-header, .input-toggle, .btn-pdf, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab {
     display: none !important;
   }
@@ -405,18 +406,47 @@ body {
   .section.active {
     display: block !important;
   }
+  /* 全サブセクションを展開 */
   .sub-section {
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
-    page-break-inside: avoid !important;
-    margin-bottom: 30px !important;
+    margin-bottom: 40px !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
+  /* カード単体での改ページ崩れ・重なりを防止 */
   .card {
     page-break-inside: avoid !important;
-    border: 0.5px solid #ccc !important;
-    margin-bottom: 20px !important;
+    break-inside: avoid !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 24px !important;
+    padding: 20px !important;
+    position: relative !important;
+    height: auto !important;
   }
+  /* グリッドレイアウトを崩さない設定 */
+  .metrics {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    margin-bottom: 24px !important;
+  }
+  .metric {
+    flex: 1 1 140px !important;
+    border: 1px solid #ddd !important;
+  }
+  .match-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    margin-bottom: 24px !important;
+  }
+  .match-card {
+    flex: 1 1 160px !important;
+    border: 1px solid #ddd !important;
+  }
+  /* テーブルのレスポンシブ解除と崩れ防止 */
   .table-responsive {
     overflow: visible !important;
     border: none !important;
@@ -424,19 +454,34 @@ body {
   .player-table {
     min-width: 100% !important;
     width: 100% !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
+    border: 1px solid #ddd !important;
+  }
+  .player-table th, .player-table td {
+    padding: 8px 6px !important;
+    border-bottom: 1px solid #ddd !important;
   }
   .player-table th.sticky-col,
   .player-table td.sticky-col {
     position: static !important;
     background: transparent !important;
-    border-right: 0.5px solid #ccc !important;
+    border-right: 1px solid #ddd !important;
+  }
+  /* グラフが重なるのを防ぐために高さを完全固定 */
+  .chart-container {
+    height: 260px !important;
+    position: relative !important;
+    display: block !important;
   }
   .chart-container canvas {
-    display: none !important;
+    display: none !important; /* スクリプトで画像置換するため非表示 */
   }
   .print-image-fallback {
     display: block !important;
+    max-height: 250px !important;
+    width: auto !important;
+    margin: 0 auto !important;
+    object-fit: contain !important;
   }
 }
 
@@ -533,18 +578,20 @@ function triggerSmartPrint() {
   btn.innerText = "⏳ 準備中...";
 
   const curKey = activeTournamentKey;
-  const printTitle=document.getElementById('printTournamentTitle');
+  const printTitle = document.getElementById('printTournamentTitle');
   if(printTitle && DATA[curKey]){
-    printTitle.textContent=DATA[curKey].label;
+    printTitle.textContent = DATA[curKey].label;
   }
   if (!curKey) return;
   
+  // 印刷用にすべてのサブセクション（試合、選手、考察）を一時的に展開
   const subSections = document.querySelectorAll('#sec_' + curKey + ' .sub-section');
   subSections.forEach(s => {
-    s.style.display = 'block';
-    s.style.opacity = '1';
+    s.style.setProperty('display', 'block', 'important');
+    s.style.setProperty('opacity', '1', 'important');
   });
 
+  // レンダリング時間を確保するため少し長めに設定 (800ms)
   setTimeout(() => {
     const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
     canvases.forEach(canvas => {
@@ -552,30 +599,35 @@ function triggerSmartPrint() {
       const oldImg = parent.querySelector('.print-image-fallback');
       if (oldImg) oldImg.remove();
 
-      const imgData = canvas.toDataURL('image/png');
-      const img = document.createElement('img');
-      img.src = imgData;
-      img.className = 'print-image-fallback';
-      parent.appendChild(img);
+      try {
+        const imgData = canvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = imgData;
+        img.className = 'print-image-fallback';
+        parent.appendChild(img);
+      } catch (e) {
+        console.error("Canvasの画像変換に失敗しました:", e);
+      }
     });
 
     btn.innerText = "📄 PDF出力";
     window.print();
 
+    // 印刷ダイアログが閉じた後に元の画面表示に戻す
     setTimeout(() => {
       const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
       if (activeSubBtn) {
         const subKey = activeSubBtn.id.replace('stab_' + curKey + '_', '');
         subSections.forEach(s => {
           if (s.id !== 'sub_' + curKey + '_' + subKey) {
-            s.style.display = '';
-            s.style.opacity = '';
+            s.style.removeProperty('display');
+            s.style.removeProperty('opacity');
           }
         });
       }
-    }, 500);
+    }, 1000);
 
-  }, 600);
+  }, 800);
 }
 
 function deleteTournament(tKey, event) {
@@ -610,7 +662,6 @@ function importPastedData() {
 
   try {
     const rawLines = text.split('\n').map(l => l.split(/\t|,/).map(c => c.trim()));
-    // 「対戦相手」または「相手チーム」があれば縦型新フォーマット
     const isNewFormat = rawLines.some(l => l[0] === '対戦相手' || l[0] === '相手チーム');
 
     if (isNewFormat) {
@@ -677,7 +728,6 @@ function importNewFormat(title, lines) {
       const rawName = line[1] ? line[1].trim() : '';
       const playerName = rawName !== '' ? rawName : '背番号' + jersey;
 
-      // 新フォーマット用に2列スキップして○×データをスライス
       const rawNums = line.slice(2);
       const isDash = rawNums.every(v => v === '-' || v === '');
       const nums = rawNums.map(v => parseInt(v) || 0);
@@ -825,7 +875,6 @@ function renderPTable(tKey, midx){
     +'<th style="width:110px">外AT率</th>'
     +'</tr></thead><tbody>';
   rows.forEach(r=>{
-    // 全スタッツが"-"（null）の選手は描写しない
     const hasData = DATA[tKey].players.find(p=>p.name===r.name);
     const allNull = hasData && hasData.stats.every(s=>s===null||s===undefined);
     if(allNull) return;
