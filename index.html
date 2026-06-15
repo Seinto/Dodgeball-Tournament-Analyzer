@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ドッジボール大会ダッシュボード</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="大会ボード">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f4;
+  --bg-info: #E6F1FB;
+  --bg-success: #EAF3DE;
+  --bg-danger: #FCEBEB;
+  --bg-warning: #FAEEDA;
+  --text-primary: #1a1a18;
+  --text-secondary: #5f5e5a;
+  --text-info: #0C447C;
+  --text-success: #27500A;
+  --text-danger: #791F1F;
+  --text-warning: #633806;
+  --border: rgba(0,0,0,0.12);
+  --border-md: rgba(0,0,0,0.22);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --blue: #3772FF;
+  --green: #4EA30A;
+  --red: #D82121;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.header {
+  background: var(--bg-primary);
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header h1 { font-size: 16px; font-weight: bold; }
+.btn {
+  background: var(--blue); color: #fff; border: none; padding: 8px 14px;
+  border-radius: var(--radius-md); font-size: 13px; font-weight: bold; cursor: pointer;
+}
+.btn:active { opacity: 0.85; }
+.btn-danger { background: var(--red); }
+.btn-success { background: var(--green); }
+.btn-secondary { background: var(--text-secondary); }
+
+.t-tabs {
+  display: flex; gap: 4px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-wrapper { display: flex; align-items: center; background: #e5e5e0; border-radius: var(--radius-md); overflow: hidden; }
+.tab-wrapper.active { background: var(--blue); }
+.t-tab {
+  border: none; background: transparent; padding: 8px 12px; font-size: 13px; font-weight: bold;
+  color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+}
+.tab-wrapper.active .t-tab { color: #fff; }
+.btn-delete-tab {
+  background: transparent; border: none; color: var(--text-secondary); padding: 0 8px 0 2px;
+  font-size: 14px; cursor: pointer; height: 100%; display: flex; align-items: center;
+}
+.tab-wrapper.active .btn-delete-tab { color: rgba(255,255,255,0.7); }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.sub-nav { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 12px; gap: 8px; }
+.sub-btn {
+  background: transparent; border: none; padding: 6px 4px; font-size: 14px; font-weight: bold;
+  color: var(--text-secondary); cursor: pointer; position: relative; bottom: -2px;
+}
+.sub-btn.active { color: var(--blue); border-bottom: 2px solid var(--blue); }
+
+.sub-section { display: none; }
+.sub-section.active { display: block; }
+
+.card {
+  background: var(--bg-primary); border-radius: var(--radius-lg); padding: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 12px;
+}
+.card-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+
+.grid-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+@media(min-width: 480px){ .grid-summary { grid-template-columns: repeat(4, 1fr); } }
+.sum-box { padding: 10px; border-radius: var(--radius-md); text-align: center; }
+.sum-box.info { background: var(--bg-info); color: var(--text-info); }
+.sum-box.success { background: var(--bg-success); color: var(--text-success); }
+.sum-box.danger { background: var(--bg-danger); color: var(--text-danger); }
+.sum-box.warning { background: var(--bg-warning); color: var(--text-warning); }
+.sum-label { font-size: 11px; font-weight: bold; opacity: 0.8; margin-bottom: 2px; }
+.sum-val { font-size: 20px; font-weight: bold; font-family: sans-serif; }
+
+.m-list { display: flex; flex-direction: column; gap: 8px; }
+.m-item {
+  border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px;
+  background: var(--bg-primary); position: relative;
+}
+.m-item.win { border-left: 5px solid var(--green); }
+.m-item.lose { border-left: 5px solid var(--red); }
+.m-top { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-weight: bold; }
+.m-main { display: flex; justify-content: space-between; align-items: center; }
+.m-team { font-weight: bold; font-size: 14px; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-score { font-size: 16px; font-weight: bold; font-family: monospace; padding: 2px 6px; border-radius: 4px; }
+.m-item.win .m-score { background: var(--bg-success); color: var(--text-success); }
+.m-item.lose .m-score { background: var(--bg-danger); color: var(--text-danger); }
+.m-bottom { margin-top: 6px; font-size: 12px; color: var(--text-secondary); border-top: 1px dashed var(--border); padding-top: 4px; }
+
+.table-scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; padding: 0 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; }
+th, td { padding: 8px 4px; border-bottom: 1px solid var(--border); }
+th { background: var(--bg-secondary); font-weight: bold; color: var(--text-secondary); font-size: 11px; }
+td.p-name { font-weight: bold; text-align: left; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+tr.highlight { background: var(--bg-info); }
+
+.modal-back {
+  position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);
+  display:none; justify-content:center; align-items:center; z-index:2000; padding: 12px;
+}
+.modal-back.active { display:flex; }
+.modal-content {
+  background:#fff; width:100%; max-width:460px; border-radius:var(--radius-lg); padding:16px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
+}
+.modal-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid var(--blue); padding-bottom: 4px; }
+.form-group { margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 12px; font-weight: bold; color: var(--text-secondary); }
+.form-group input, .form-group textarea, .form-group select {
+  padding: 8px; border: 1px solid var(--border-md); border-radius: var(--radius-md); font-size: 14px; width: 100%; font-family: inherit;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+.insight-block { background: var(--bg-secondary); padding: 10px; border-radius: var(--radius-md); font-size: 13px; white-space: pre-wrap; margin-bottom: 8px; line-height: 1.5; color: #333; }
+.chart-container { position: relative; width: 100%; height: 220px; margin-top: 4px; }
+
+.btn-delete-match {
+  background: transparent; border: none; color: var(--text-danger); font-size: 11px; cursor: pointer; font-weight: bold; text-decoration: underline;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="app-title">大会ダッシュボード</h1>
+  <button class="btn" onclick="openTournamentModal()">🏆 大会追加</button>
+</div>
+
+<div class="t-tabs" id="tournament-tabs"></div>
+<div id="sections-container"></div>
+
+<div class="modal-back" id="t-modal">
+  <div class="modal-content">
+    <div class="modal-title">新規大会の登録</div>
+    <div class="form-group">
+      <label>大会名</label>
+      <input type="text" id="t-input-name" placeholder="例：春季市大会, 練習試合など">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeTournamentModal()">キャンセル</button>
+      <button class="btn btn-success" onclick="createTournament()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="m-modal">
+  <div class="modal-content">
+    <div class="modal-title" id="m-modal-title">試合結果の入力</div>
+    <div class="form-group">
+      <label>対戦相手</label>
+      <input type="text" id="m-input-opp" placeholder="相手チーム名">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>自チーム内野残数</label>
+        <input type="number" id="m-input-my" min="0" max="20" value="0">
+      </div>
+      <div class="form-group">
+        <label>相手チーム内野残数</label>
+        <input type="number" id="m-input-oppnum" min="0" max="20" value="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>キープ時間 (秒)</label>
+      <input type="number" id="m-input-time" min="0" value="0">
+    </div>
+    <div class="form-group">
+      <label>試合メモ / 振り返り</label>
+      <textarea id="m-input-memo" rows="3" placeholder="試合展開や反省点など"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeMatchModal()">キャンセル</button>
+      <button class="btn var-btn-save" id="m-btn-save">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="i-modal">
+  <div class="modal-content">
+    <div class="modal-title">大会総括・考察の編集</div>
+    <div class="form-group">
+      <label>考察内容</label>
+      <textarea id="i-input-text" rows="8" placeholder="大会を通じて得られた課題や、次戦への戦術変更点などをご記入ください。"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeInsightModal()">キャンセル</button>
+      <button class="btn btn-success" id="i-btn-save">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="p-modal">
+  <div class="modal-content">
+    <div class="modal-title">選手名の登録・変更</div>
+    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">背番号1〜20の選手名を登録できます。空欄は「背番号 X」となります。</div>
+    <div id="p-inputs-list" style="max-height:50vh; overflow-y:auto; padding-right:4px; display:grid; grid-template-columns:1fr 1fr; gap:6px;"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closePlayerModal()">キャンセル</button>
+      <button class="btn btn-success" id="p-btn-save">適用する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var dataStore = JSON.parse(localStorage.getItem('ganba_analyzer_data')) || { tournaments: {}, activeKey: "" };
+var playerNames = JSON.parse(localStorage.getItem('ganba_player_names')) || {};
+var activeTournamentKey = dataStore.activeKey || "";
+var charts = {};
+
+function saveData(){
+  dataStore.activeKey = activeTournamentKey;
+  localStorage.setItem('ganba_analyzer_data', JSON.stringify(dataStore));
+}
+function savePlayerNames(){
+  localStorage.setItem('ganba_player_names', JSON.stringify(playerNames));
+}
+
+function init(){
+  if(Object.keys(dataStore.tournaments).length === 0){
+    var k = "t_" + Date.now();
+    dataStore.tournaments[k] = { name: "第1回 練習試合リーグ", matches: [], insight: "" };
+    activeTournamentKey = k;
+    saveData();
+  }
+  if(!activeTournamentKey || !dataStore.tournaments[activeTournamentKey]){
+    activeTournamentKey = Object.keys(dataStore.tournaments)[0];
+    saveData();
+  }
+  renderTabs();
+  renderSections();
+}
+
+function renderTabs(){
+  var tTabs = document.getElementById('tournament-tabs');
+  tTabs.innerHTML = "";
+  Object.keys(dataStore.tournaments).forEach(function(tKey){
+    var t = dataStore.tournaments[tKey];
+    var wrapper = document.createElement('div');
+    wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : '');
+    wrapper.onclick = function(){ switchTournament(tKey); };
+
+    var tabEl = document.createElement('button'); tabEl.className = 't-tab'; tabEl.textContent = t.name;
+    var delBtn = document.createElement('button'); delBtn.className = 'btn-delete-tab'; delBtn.innerHTML = '×';
+    const doDelete = function(e){ e.stopPropagation(); e.preventDefault(); deleteTournament(tKey, e); };
+    delBtn.onclick = delBtn.ontouchend = doDelete;
+
+    wrapper.appendChild(tabEl); wrapper.appendChild(delBtn); tTabs.appendChild(wrapper);
+  });
+}
+
+function renderSections(){
+  var container = document.getElementById('sections-container');
+  container.innerHTML = "";
+  Object.keys(dataStore.tournaments).forEach(function(tKey){
+    var t = dataStore.tournaments[tKey];
+    var secEl = document.createElement('div'); secEl.className = 'section' + (tKey === activeTournamentKey ? ' active' : ''); secEl.id = 'sec_'+tKey;
+    secEl.innerHTML = '<div class="sub-nav" id="subs_'+tKey+'"><button class="sub-btn active" id="stab_'+tKey+'_match" onclick="switchSub(\''+tKey+'\',\'match\')">試合結果</button><button class="sub-btn" id="stab_'+tKey+'_player" onclick="switchSub(\''+tKey+'\',\'player\')">選手データ</button><button class="sub-btn" id="stab_'+tKey+'_insight" onclick="switchSub(\''+tKey+'\',\'insight\')">考察</button></div>'
+      +'<div id="subcon_'+tKey+'"><div class="sub-section active" id="sub_'+tKey+'_match">'+buildMatchHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_player">'+buildPlayerHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_insight">'+buildInsightHTML(t,tKey)+'</div></div>';
+    container.appendChild(secEl);
+    if(tKey === activeTournamentKey) { renderCharts(tKey); }
+  });
+}
+
+function switchTournament(key){
+  activeTournamentKey = key;
+  saveData();
+  renderTabs();
+  var secs = document.getElementsByClassName('section');
+  for(var i=0; i<secs.length; i++){ secs[i].classList.remove('active'); }
+  var target = document.getElementById('sec_'+key);
+  if(target) target.classList.add('active');
+  renderCharts(key);
+}
+
+function switchSub(tKey, subType){
+  var subBtns = document.querySelectorAll('#subs_'+tKey+' .sub-btn');
+  subBtns.forEach(function(b){ b.classList.remove('active'); });
+  var activeBtn = document.getElementById('stab_'+tKey+'_'+subType);
+  if(activeBtn) activeBtn.classList.add('active');
+
+  var subSecs = document.querySelectorAll('#subcon_'+tKey+' .sub-section');
+  subSecs.forEach(function(s){ s.classList.remove('active'); });
+  var targetSec = document.getElementById('sub_'+tKey+'_'+subType);
+  if(targetSec) targetSec.classList.add('active');
+}
+
+function openTournamentModal(){ document.getElementById('t-modal').classList.add('active'); document.getElementById('t-input-name').focus(); }
+function closeTournamentModal(){ document.getElementById('t-modal').classList.remove('active'); document.getElementById('t-input-name').value=""; }
+function createTournament(){
+  var name = document.getElementById('t-input-name').value.trim();
+  if(!name){ alert("大会名を入力してください。"); return; }
+  var k = "t_" + Date.now();
+  dataStore.tournaments[k] = { name: name, matches: [], insight: "" };
+  activeTournamentKey = k;
+  saveData();
+  closeTournamentModal();
+  renderTabs();
+  renderSections();
+}
+function deleteTournament(key, e){
+  if(Object.keys(dataStore.tournaments).length <= 1){ alert("唯一の大会データを削除することはできません。"); return; }
+  var t = dataStore.tournaments[key];
+  if(!confirm("「" + t.name + "」の全データを削除します。よろしいですか？")) return;
+  delete dataStore.tournaments[key];
+  if(activeTournamentKey === key){ activeTournamentKey = Object.keys(dataStore.tournaments)[0]; }
+  saveData();
+  init();
+}
+
+function openMatchModal(tKey, mIdx){
+  var mModal = document.getElementById('m-modal');
+  var titleEl = document.getElementById('m-modal-title');
+  var saveBtn = document.getElementById('m-btn-save');
+  
+  if(mIdx === undefined){
+    titleEl.textContent = "試合結果の追加";
+    document.getElementById('m-input-opp').value = "";
+    document.getElementById('m-input-my').value = "0";
+    document.getElementById('m-input-oppnum').value = "0";
+    document.getElementById('m-input-time').value = "0";
+    document.getElementById('m-input-memo').value = "";
+    saveBtn.onclick = function(){ saveMatch(tKey); };
+  } else {
+    titleEl.textContent = "試合結果の編集";
+    var m = dataStore.tournaments[tKey].matches[mIdx];
+    document.getElementById('m-input-opp').value = m.opp;
+    document.getElementById('m-input-my').value = m.my;
+    document.getElementById('m-input-oppnum').value = m.oppNum;
+    document.getElementById('m-input-time').value = m.time || 0;
+    document.getElementById('m-input-memo').value = m.memo || "";
+    saveBtn.onclick = function(){ saveMatch(tKey, mIdx); };
+  }
+  mModal.classList.add('active');
+}
+function closeMatchModal(){ document.getElementById('m-modal').classList.remove('active'); }
+function saveMatch(tKey, mIdx){
+  var opp = document.getElementById('m-input-opp').value.trim() || "不明なチーム";
+  var my = parseInt(document.getElementById('m-input-my').value) || 0;
+  var oppNum = parseInt(document.getElementById('m-input-oppnum').value) || 0;
+  var time = parseInt(document.getElementById('m-input-time').value) || 0;
+  var memo = document.getElementById('m-input-memo').value.trim();
+
+  var mData = { opp: opp, my: my, oppNum: oppNum, time: time, memo: memo };
+  if(mIdx === undefined){ dataStore.tournaments[tKey].matches.push(mData); }
+  else { dataStore.tournaments[tKey].matches[mIdx] = mData; }
+  
+  saveData();
+  closeMatchModal();
+  refreshSection(tKey);
+}
+function deleteMatch(tKey, mIdx, e){
+  if(!confirm("この試合データを削除しますか？")) return;
+  dataStore.tournaments[tKey].matches.splice(mIdx, 1);
+  saveData();
+  refreshSection(tKey);
+}
+
+function openInsightModal(tKey){
+  document.getElementById('i-input-text').value = dataStore.tournaments[tKey].insight || "";
+  document.getElementById('i-btn-save').onclick = function(){
+    dataStore.tournaments[tKey].insight = document.getElementById('i-input-text').value.trim();
+    saveData(); closeInsightModal(); refreshSection(tKey); switchSub(tKey, 'insight');
+  };
+  document.getElementById('i-modal').classList.add('active');
+}
+function closeInsightModal(){ document.getElementById('i-modal').classList.remove('active'); }
+
+function openPlayerModal(tKey){
+  var listEl = document.getElementById('p-inputs-list');
+  listEl.innerHTML = "";
+  for(var i=1; i<=20; i++){
+    var val = playerNames[i] || "";
+    listEl.innerHTML += '<div class="form-group"><label>背番号 '+i+'</label><input type="text" class="p-name-in" data-num="'+i+'" value="'+val+'" placeholder="選手名"></div>';
+  }
+  document.getElementById('p-btn-save').onclick = function(){
+    var inputs = document.querySelectorAll('.p-name-in');
+    inputs.forEach(function(inp){
+      var n = inp.getAttribute('data-num'); var v = inp.value.trim();
+      if(v) playerNames[n] = v; else delete playerNames[n];
+    });
+    savePlayerNames(); closePlayerModal(); refreshSection(tKey); switchSub(tKey, 'player');
+  };
+  document.getElementById('p-modal').classList.add('active');
+}
+function closePlayerModal(){ document.getElementById('p-modal').classList.remove('active'); }
+
+function refreshSection(tKey){
+  var t = dataStore.tournaments[tKey];
+  document.getElementById('sub_'+tKey+'_match').innerHTML = buildMatchHTML(t, tKey);
+  document.getElementById('sub_'+tKey+'_player').innerHTML = buildPlayerHTML(t, tKey);
+  document.getElementById('sub_'+tKey+'_insight').innerHTML = buildInsightHTML(t, tKey);
+  renderCharts(tKey);
+}
+
+function buildMatchHTML(t, tKey){
+  var w=0, l=0, d=0, mySum=0, oppSum=0;
+  t.matches.forEach(function(m){
+    mySum += m.my; oppSum += m.oppNum;
+    if(m.my > m.oppNum) w++; else if(m.my < m.oppNum) l++; else d++;
+  });
+  var avgMy = t.matches.length ? (mySum / t.matches.length).toFixed(1) : 0;
+  var avgOpp = t.matches.length ? (oppSum / t.matches.length).toFixed(1) : 0;
+
+  var html = '<div class="grid-summary">'
+    +'<div class="sum-box info"><div class="sum-label">試合数</div><div class="sum-val">'+t.matches.length+'</div></div>'
+    +'<div class="sum-box success"><div class="sum-label">勝 - 負 - 分</div><div class="sum-val" style="font-size:15px; margin-top:4px;">'+w+' <span style="font-size:11px;opacity:0.6">勝</span> '+l+' <span style="font-size:11px;opacity:0.6">負</span> '+d+' <span style="font-size:11px;opacity:0.6">分</span></div></div>'
+    +'<div class="sum-box warning"><div class="sum-label">平均内野残数</div><div class="sum-val">'+avgMy+'</div></div>'
+    +'<div class="sum-box danger"><div class="sum-label">平均被内野残数</div><div class="sum-val">'+avgOpp+'</div></div>'
+    +'</div>'
+    +'<div class="card"><div class="card-title">戦績推移グラフ</div><div class="chart-container"><canvas id="chart_'+tKey+'"></canvas></div></div>'
+    +'<div class="card"><div class="card-title">試合結果明細 <button class="btn btn-success" style="padding:4px 10px; font-size:12px;" onclick="openMatchModal(\''+tKey+'\')">＋ 試合追加</button></div><div class="m-list">';
+  
+  if(!t.matches.length) {
+    html += '<div style="text-align:center;color:var(--text-secondary);padding:20px 0;font-size:13px;">試合結果データが登録されていません。</div>';
+  } else {
+    t.matches.forEach(function(m, idx){
+      var cls = m.my > m.oppNum ? 'win' : (m.my < m.oppNum ? 'lose' : '');
+      html += '<div class="m-item '+cls+'" onclick="openMatchModal(\''+tKey+'\','+idx+')">'
+        +'<div class="m-top"><span>第 '+(idx+1)+' 試合</span><button class="btn-delete-match" onclick="event.stopPropagation(); deleteMatch(\''+tKey+'\','+idx+',event)">削除</button></div>'
+        +'<div class="m-main"><div class="m-team">vs '+m.opp+'</div><div class="m-score">'+m.my+' － '+m.oppNum+'</div></div>';
+      if(m.time || m.memo){
+        html += '<div class="m-bottom">';
+        if(m.time) html += '⏱️ キープ: '+m.time+'秒 ';
+        if(m.memo) html += '📝 ' + m.memo;
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function buildPlayerHTML(t, tKey){
+  var html = '<div class="card"><div class="card-title">内野生存率ランキング <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openPlayerModal(\''+tKey+'\')">⚙️ 選手名一括設定</button></div><div class="table-scroller"><table>'
+    +'<thead><tr><th>順位</th><th>番号</th><th style="text-align:left">選手名</th><th>出場</th><th>生存数</th><th>生存率</th></tr></thead><tbody>';
+  
+  var pStats = [];
+  for(var i=1; i<=20; i++){ pStats.push({ num: i, name: playerNames[i]||("背番号 "+i), activeMatches: 0, surviveCount: 0 }); }
+
+  t.matches.forEach(function(m){
+    var myLeft = m.my;
+    pStats.forEach(function(p){
+      p.activeMatches++; 
+      if(p.num <= myLeft){ p.surviveCount++; }
+    });
+  });
+
+  pStats.forEach(function(p){ p.ratio = p.activeMatches ? (p.surviveCount / p.activeMatches * 100).toFixed(0) : 0; });
+  pStats.sort(function(a,b){ return b.ratio - a.ratio || a.num - b.num; });
+
+  if(!t.matches.length){
+    html += '<tr><td colspan="6" style="padding:20px; color:var(--text-secondary);">試合データが蓄積されると自動集計されます。</td></tr>';
+  } else {
+    pStats.forEach(function(p, index){
+      var hCls = index < 3 ? 'class="highlight"' : '';
+      html += '<tr '+hCls+'><td>'+(index+1)+'</td><td>'+p.num+'</td><td class="p-name">'+p.name+'</td><td>'+p.activeMatches+'</td><td>'+p.surviveCount+'</td><td style="font-weight:bold;color:var(--text-info)">'+p.ratio+'%</td></tr>';
+    });
+  }
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+function buildInsightHTML(t, tKey){
+  var text = t.insight || "大会を通じて気づいた戦術的な課題、フォーメーションの評価、アタックの成功傾向などをここにメモして総括できます。";
+  var hasText = !!t.insight;
+  var html = '<div class="card"><div class="card-title">大会総括・課題考察 <button class="btn btn-success" style="padding:4px 10px; font-size:12px;" onclick="openInsightModal(\''+tKey+'\')">✍️ 編集</button></div>'
+    +'<div class="insight-block" style="'+(hasText?'':'color:var(--text-secondary);font-style:italic;')+'">'+text+'</div>'
+    +'</div>';
+  return html;
+}
+
+function renderCharts(tKey){
+  var t = dataStore.tournaments[tKey];
+  var ctx = document.getElementById('chart_'+tKey);
+  if(!ctx) return;
+  
+  if(charts[tKey]){ charts[tKey].destroy(); }
+  if(!t.matches.length) return;
+
+  var labels = [];
+  var myData = [];
+  var oppData = [];
+  t.matches.forEach(function(m, idx){
+    labels.push("第"+(idx+1));
+    myData.push(m.my);
+    oppData.push(m.oppNum);
+  });
+
+  charts[tKey] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: '自チーム内野', data: myData, borderColor: '#3772FF', backgroundColor: '#3772FF', borderWidth: 2, tension: 0.1 },
+        { label: '相手チーム内野', data: oppData, borderColor: '#D82121', backgroundColor: '#D82121', borderWidth: 2, tension: 0.1, borderDash: [4,4] }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { min: 0, max: 12, ticks: { stepSize: 2 } }
+      },
+      plugins: {
+        legend: { labels: { boxWidth: 12, font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+window.onload = init;
+
+// ==========================================
+// PWA用：サービスワーカーの登録スクリプト
+// ==========================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js')
+            .then(function(reg) { console.log('Service Worker 登録成功:', reg.scope); })
+            .catch(function(err) { console.log('Service Worker 登録失敗:', err); });
+    });
+}
+</script>
+</body>
+</html>
