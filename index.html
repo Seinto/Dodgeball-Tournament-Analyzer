@@ -710,7 +710,9 @@ function importPastedData() {
 function importNewFormat(title, lines) {
   const blocks = []; let current = null;
   for (const line of lines) {
-    if (!line[0]) { if (current) current.push(line); continue; }
+    // 行全体が空、あるいは全ての要素が空文字ならスキップ
+    if (line.length === 0 || line.every(c => c === '')) { continue; }
+    
     if (line[0].includes('試合スタッツ') || line[0] === '対戦相手' || line[0] === '相手チーム') {
       if (current) blocks.push(current);
       current = [line];
@@ -719,13 +721,19 @@ function importNewFormat(title, lines) {
     }
   }
   if (current) blocks.push(current);
-  if (blocks.length === 0) { alert('有効な試合データブロックが見つかりません。'); return; }
+
+  // ブロックの中から、対戦相手が正しく設定されている有効なブロックのみをフィルタリング
+  const validBlocks = blocks.filter(block => {
+    return block.some(line => line[0] === '対戦相手' && line[1] && line[1] !== '');
+  });
+
+  if (validBlocks.length === 0) { alert('有効な試合データブロックが見つかりません。'); return; }
 
   const matches = []; const jerseyMap = {};
-  blocks.forEach((block, matchIdx) => {
+  validBlocks.forEach((block, matchIdx) => {
     let opp = '不明'; let keep = '0:00'; let us = 0, them = 0; let note = '';
     for (const line of block) {
-      if (!line[0]) continue;
+      if (!line[0] || line[0] === '') continue;
       if (line[0] === '対戦相手') opp = line[1] || '不明';
       if (line[0] === 'ボールキープ時間') {
         const raw = line[1] || '0';
@@ -933,7 +941,7 @@ function buildInsightHTML(t, tKey){
     if(tacticalTags.length) analysisText += `・<strong>戦術配置:</strong> ${tacticalTags.join("および")} を明記した戦略的な試合運用が確認できます。<br>`;
     if(externalFactors.length) analysisText += `・<strong>状況変化:</strong> ${externalFactors.join("")} が発生した試合が多く、戦況に大きな影響を与えている可能性があります。<br>`;
     
-    // 特定の負け試合（例: 第5試合 三雲② など）に備考があれば、そこから課題をピックアップ
+    // 特定の負け試合に備考があれば、そこから課題をピックアップ
     const lossWithNotes = loses.filter(m => m.note);
     if(lossWithNotes.length) {
       analysisText += `・<strong>敗戦期の傾向:</strong> 敗戦した試合（${lossWithNotes.map(m=>'vs '+m.opp).join(", ")}）の配置バランスや、相手の得意なアタックに対するディフェンス陣の布陣を再検証する必要があります。`;
@@ -950,7 +958,7 @@ function buildInsightHTML(t, tKey){
     { icon:"⏱", cls:"fi-blue", title:"キープ時間と勝敗の相関", desc:'勝利試合の平均キープ時間は<span class="hl hl-green">'+fmtSec(winKeepAvg)+'</span>、敗戦試合は<span class="hl hl-red">'+fmtSec(loseKeepAvg)+'</span>。キープが長い試合ほど得点につながる傾向がある。' },
     { icon:"🎯", cls:"fi-amber", title:"内野 vs 外野アタック効率", desc:'内野アタック成功率は<span class="hl hl-blue">'+uaRate+'%</span>（'+uaSucc+'/'+totalUA+'）、外野アタック成功率は<span class="hl hl-blue">'+oaRate+'%</span>（'+oaSucc+'/'+totalOA+'）。内野アタック精度を軸に組み立てることが重要。' },
     { icon:"🛡", cls:"fi-green", title:"チーム全体のディフェンス", desc:'チーム全体のディフェンス成功率は<span class="hl hl-green">'+teamDefRate+'%</span>（'+defSucc+'/'+totalDef+'）。最も成功率が高いのは<span class="hl hl-blue">'+(topDef?topDef.name:"-")+'</span>'+(topDef?"（"+topDef.dr+"%）":"")+'。防衛ラインの維持が勝敗の鍵。' },
-    { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分担の最適化が確認できます。' }
+    { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分分担の最適化が確認できます。' }
   ];
   let h = '<div class="card"><div class="finding-list">';
   findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div style="flex:1;"><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
