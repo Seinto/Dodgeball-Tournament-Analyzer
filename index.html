@@ -32,8 +32,8 @@
   --text-success: #27500A;
   --text-danger: #791F1F;
   --text-warning: #633806;
-  --border: rgba(0,0,0,0.08);
-  --border-md: rgba(0,0,0,0.18);
+  --border: rgba(0,0,0,0.04);
+  --border-md: rgba(0,0,0,0.12);
   --radius-md: 10px;
   --radius-lg: 16px;
   --blue: #378ADD;
@@ -341,7 +341,7 @@ body {
 
 .match-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -351,12 +351,15 @@ body {
   border-radius: var(--radius-md);
   padding: 12px;
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
 }
 .match-opp { font-size: 12px; color: var(--text-primary); margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .score-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
 .score-big { font-size: 24px; font-weight: 700; line-height: 1; }
 .score-vs { font-size: 12px; color: var(--text-secondary); }
-.match-keep { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.match-keep { font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
+.match-note-text { font-size: 11px; color: var(--text-secondary); line-height: 1.4; border-top: 1px dashed var(--border-md); padding-top: 6px; margin-top: auto; }
 
 .badge {
   display: inline-block;
@@ -545,11 +548,11 @@ const DEFAULT_DATA = {
   "260607さるぼぼ": {
     label: "さるぼぼカップ（2026/6/7）",
     matches: [
-      { opp:"ガッツJ", us:3, them:6, keep:"1:20", result:"負" },
-      { opp:"島デビ",  us:6, them:3, keep:"3:00", result:"勝" },
-      { opp:"松本G",   us:5, them:3, keep:"2:37", result:"勝" },
-      { opp:"五福D",   us:7, them:2, keep:"3:33", result:"勝" },
-      { opp:"池田",    us:4, them:6, keep:"2:28", result:"負" },
+      { opp:"ガッツJ", us:3, them:6, keep:"1:20", result:"負", note:"パスカットからの素早いカウンターへの戻りが遅れ、失点を重ねた。中盤のカットを警戒する必要あり。" },
+      { opp:"島デビ",  us:6, them:3, keep:"3:00", result:"勝", note:"外野からの効果的な揺さぶりが決まり終始リード。理想的なボールキープを展開できた。" },
+      { opp:"松本G",   us:5, them:3, keep:"2:37", result:"勝", note:"序盤リードされたが、エースのアタック成功で逆転。ディフェンス陣のワンタッチ捕球も冴えていた。" },
+      { opp:"五福D",   us:7, them:2, keep:"3:33", result:"勝", note:"終始ノーミスに近い試合運び。パスがスムーズに回り、内野アタックの決定率が極めて高かった。" },
+      { opp:"池田",    us:4, them:6, keep:"2:28", result:"負", note:"後半、キャッチミスから崩れた。相手の強気なアタックに対するディフェンスのフォーメーションに課題。" },
     ],
     players: [
       { name:"ようた",   stats:[{def:[0,1],ia:[1,0],oa:[1,3]},{def:[0,0],ia:[3,3],oa:[0,0]},{def:[2,0],ia:[3,1],oa:[0,0]},{def:[0,0],ia:[2,2],oa:[0,0]},{def:[0,1],ia:[0,4],oa:[1,2]}] },
@@ -655,7 +658,9 @@ function buildPrintOnlyMatchTablesHTML(tKey) {
   if(!t || !t.matches) return '';
   let h = '<div class="print-only-match-tables">';
   t.matches.forEach((m, idx) => {
-    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + m.result + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
+    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + m.result + ' ' + m.us + '-' + m.them + ')</div>';
+    if(m.note) { h += '<div style="font-size:12px; margin-bottom:10px; color:#333; padding:8px; background:#f0f0f0; border-left:3px solid var(--blue)">💡 備考: ' + m.note + '</div>'; }
+    h += '<div class="card">';
     const rows = calcAll(t.players, idx);
     h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
     rows.forEach(r => {
@@ -748,12 +753,13 @@ function importNewFormat(title, lines) {
 
   const matches = []; const jerseyMap = {};
   blocks.forEach((block, matchIdx) => {
-    const opp = block[0][1] || '不明'; let keep = '0:00'; let us = 0, them = 0;
+    const opp = block[0][1] || '不明'; let keep = '0:00'; let us = 0, them = 0; let note = '';
     for (const line of block) {
       if (line[0] === 'ボールキープ時間') { const raw = line[1] || '0'; if (raw.endsWith('秒')) { const sec = parseInt(raw) || 0; keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); } else { keep = raw.replace(/^0:/, ''); } }
       if (line[0] === '結果（見方-相手）') { const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0; }
+      if (line[0] === '備考' || line[0] === 'メモ') { note = line[1] || ''; }
     }
-    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負' });
+    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負', note });
     for (const line of block) {
       const jersey = line[0]; if (!jersey || isNaN(jersey) || jersey === '' || jersey === '背番号') continue;
       const rawName = line[1] ? line[1].trim() : ''; const playerName = rawName !== '' ? rawName : '背番号' + jersey;
@@ -788,7 +794,7 @@ function importLegacyFormat(title, lines) {
   });
   oppTeams.forEach((opp, index) => {
     const scoreStr = matchResults[index] || "0-0"; const [us, them] = scoreStr.replace(/減|−/g, '-').split('-').map(Number);
-    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: us > them ? "勝" : "負" });
+    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: us > them ? "勝" : "負", note: "" });
   });
 
   const players = []; let startProcessingPlayers = false;
@@ -887,7 +893,12 @@ function buildMatchHTML(t, tKey){
   const wins = t.matches.filter(m=>m.result==="勝").length; const ts = t.matches.reduce((a,m)=>a+m.us,0); const os = t.matches.reduce((a,m)=>a+m.them,0); const diff = ts - os; const maxK = Math.max.apply(null, t.matches.map(m=>keepSec(m.keep)));
   let h = '<div class="metrics"><div class="metric"><div class="metric-label">試合数</div><div class="metric-value">'+t.matches.length+'</div></div><div class="metric"><div class="metric-label">勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+wins+'勝</span> <span style="color:#A32D2D">'+(t.matches.length-wins)+'敗</span></div></div><div class="metric"><div class="metric-label">総得点</div><div class="metric-value">'+ts+'</div></div><div class="metric"><div class="metric-label">総失点</div><div class="metric-value">'+os+'</div></div><div class="metric"><div class="metric-label">得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
   h += '<div class="match-grid">';
-  t.matches.forEach(function(m){ var wl = m.result==="勝"; h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(wl?'#3B6D11':'#A32D2D')+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div></div>'; });
+  t.matches.forEach(function(m){ 
+    var wl = m.result==="勝"; 
+    h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(wl?'#3B6D11':'#A32D2D')+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div>';
+    if(m.note) { h += '<div class="match-note-text">💡 ' + m.note + '</div>'; }
+    h += '</div>'; 
+  });
   h += '</div>';
   h += '<div class="card"><div class="card-title">ボールキープ時間（対戦別）</div>';
   t.matches.forEach(function(m){ var sec = keepSec(m.keep); var pct = maxK > 0 ? Math.round(sec/maxK*100) : 0; var wl = m.result==="勝"; h += '<div class="keep-row"><div class="keep-label">vs '+m.opp+'</div><div class="keep-bg"><div class="keep-fill" style="width:'+pct+'%;background:'+(wl?'#1D9E75':'#D85A30')+'"></div></div><div class="keep-val">'+m.keep+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div></div>'; });
@@ -914,14 +925,29 @@ function buildInsightHTML(t, tKey){
   const uaRate = totalUA>0?Math.round(uaSucc/totalUA*100):0; const oaRate = totalOA>0?Math.round(oaSucc/totalOA*100):0;
   const totalDef = rows.reduce((a,r)=>a+r.dO+r.dX,0); const defSucc = rows.reduce((a,r)=>a+r.dO,0); const teamDefRate = totalDef>0?Math.round(defSucc/totalDef*100):0;
 
+  // 備考テキストからキーワードを簡易抽出し動的なテキストを生成するロジック
+  let noteInsights = "登録された試合備考がありません。";
+  if (t.matches.some(m => m.note)) {
+    const allNotes = t.matches.map(m => m.note).join(" ");
+    let keywords = [];
+    if(allNotes.includes("パスカット") || allNotes.includes("カウンター")) keywords.push('<span class="hl hl-red">パスカット・カウンター対策</span>');
+    if(allNotes.includes("ミス") || allNotes.includes("キャッチミス")) keywords.push('<span class="hl hl-amber">ミスの連鎖防止</span>');
+    if(allNotes.includes("外野") || allNotes.includes("揺さぶり")) keywords.push('<span class="hl hl-green">外野連携の強化</span>');
+    if(allNotes.includes("エース") || allNotes.includes("逆転")) keywords.push('<span class="hl hl-blue">勝負所の攻撃集中</span>');
+    
+    let noteSummaries = t.matches.filter(m => m.note).map(m => `<li><strong>vs ${m.opp} (${m.result}):</strong> ${m.note}</li>`).join("");
+    noteInsights = `各戦評ログより、今回の強化課題キーワードは ${keywords.length ? keywords.join(" / ") : '<span class="hl hl-blue">戦術の安定化</span>'} です。<ul style="margin-left:20px; margin-top:8px; font-size:12px; display:flex; flex-direction:column; gap:4px;">${noteSummaries}</ul>`;
+  }
+
   const findings = [
+    { icon:"📝", cls:"fi-amber", title:"戦評・備考からの定性分析", desc: noteInsights },
     { icon:"⏱", cls:"fi-blue", title:"キープ時間と勝敗の相関", desc:'勝利試合の平均キープ時間は<span class="hl hl-green">'+fmtSec(winKeepAvg)+'</span>、敗戦試合は<span class="hl hl-red">'+fmtSec(loseKeepAvg)+'</span>。キープが長い試合ほど得点につながる傾向がある。' },
     { icon:"🎯", cls:"fi-amber", title:"内野 vs 外野アタック効率", desc:'内野アタック成功率は<span class="hl hl-blue">'+uaRate+'%</span>（'+uaSucc+'/'+totalUA+'）、外野アタック成功率は<span class="hl hl-blue">'+oaRate+'%</span>（'+oaSucc+'/'+totalOA+'）。内野アタック精度を軸に組み立てることが重要。' },
     { icon:"🛡", cls:"fi-green", title:"チーム全体のディフェンス", desc:'チーム全体のディフェンス成功率は<span class="hl hl-green">'+teamDefRate+'%</span>（'+defSucc+'/'+totalDef+'）。最も成功率が高いのは<span class="hl hl-blue">'+(topDef?topDef.name:"-")+'</span>'+(topDef?"（"+topDef.dr+"%）":"")+'。防衛ラインの維持が勝敗の鍵。' },
     { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分担の最適化が確認できます。' }
   ];
   let h = '<div class="card"><div class="finding-list">';
-  findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
+  findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div style="flex:1;"><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
   h += '</div></div>';
   h += '<div class="card" style="margin-top:12px"><div class="card-title">キープ時間と得点差の相関</div><div class="legend"><span><span class="leg-box" style="background:#378ADD;border-radius:50%;width:10px;height:10px"></span>勝利</span><span><span class="leg-box" style="background:#E24A4A;border-radius:50%;width:10px;height:10px"></span>敗戦</span></div><div class="chart-container" style="height:200px"><canvas id="scatterChart_'+tKey+'"></canvas></div></div>';
   h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_'+tKey+'"></canvas></div></div>';
