@@ -634,7 +634,8 @@ function buildPrintOnlyMatchTablesHTML(tKey) {
     const rows = calcAll(t.players, idx);
     h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
     rows.forEach(r => {
-      const hasData = t.players.find(p => p.name === r.name); if(!hasData || !hasData.stats[idx]) return;
+      const pObj = t.players.find(p => p.name === r.name); 
+      if(!pObj || !pObj.stats[idx]) return; // 該当試合のスタッツが「-」（ハイフン）の選手は非表示
       h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
     });
     h += '</tbody></table></div></div></div>';
@@ -710,7 +711,6 @@ function importPastedData() {
 function importNewFormat(title, lines) {
   const blocks = []; let current = null;
   for (const line of lines) {
-    // 行全体が空、あるいは全ての要素が空文字ならスキップ
     if (line.length === 0 || line.every(c => c === '')) { continue; }
     
     if (line[0].includes('試合スタッツ') || line[0] === '対戦相手' || line[0] === '相手チーム') {
@@ -722,7 +722,6 @@ function importNewFormat(title, lines) {
   }
   if (current) blocks.push(current);
 
-  // ブロックの中から、対戦相手が正しく設定されている有効なブロックのみをフィルタリング
   const validBlocks = blocks.filter(block => {
     return block.some(line => line[0] === '対戦相手' && line[1] && line[1] !== '');
   });
@@ -834,7 +833,19 @@ function renderPTable(tKey, midx){
   const rows = calcAll(DATA[tKey].players, midx);
   let h = '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    const hasData = DATA[tKey].players.find(p=>p.name===r.name); if(!hasData || hasData.stats.every(s=>s===null||s===undefined)) return;
+    const pObj = DATA[tKey].players.find(p=>p.name===r.name); 
+    if(!pObj) return;
+    
+    // 【判定条件の修正】
+    if(midx === "all") {
+      // 全試合表示の時、全試合のスタッツがすべて「-」の選手はスキップ
+      if(pObj.stats.every(s => s === null)) return;
+    } else {
+      // 特定の試合を表示している時、その試合のスタッツが「-」の選手はスキップ
+      const idx = parseInt(midx);
+      if(!pObj.stats[idx]) return;
+    }
+
     h+='<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
   });
   h+='</tbody></table></div>'; document.getElementById('ptbl_'+tKey).innerHTML=h;
@@ -920,28 +931,23 @@ function buildInsightHTML(t, tKey){
   const uaRate = totalUA>0?Math.round(uaSucc/totalUA*100):0; const oaRate = totalOA>0?Math.round(oaSucc/totalOA*100):0;
   const totalDef = rows.reduce((a,r)=>a+r.dO+r.dX,0); const defSucc = rows.reduce((a,r)=>a+r.dO,0); const teamDefRate = totalDef>0?Math.round(defSucc/totalDef*100):0;
 
-  // 備考の高度なテキストマイニングと動的自動考察の生成
   let noteInsights = "登録された試合備考がありません。";
   if (t.matches.some(m => m.note)) {
     const allNotes = t.matches.map(m => m.note).join(" ");
     let tacticalTags = [];
     let externalFactors = [];
     
-    // 配置の抽出
     if(allNotes.includes("外野：")) tacticalTags.push('<span class="hl hl-blue">固定外野・役割戦略</span>');
     if(allNotes.includes("アタッカー：")) tacticalTags.push('<span class="hl hl-green">特定アタッカー集中攻撃</span>');
     
-    // 特殊状況の抽出
     if(allNotes.includes("少ない") || allNotes.includes("人数")) {
       externalFactors.push('<span class="hl hl-amber">相手の人数不利・変則フォーメーション</span>');
     }
     
-    // 勝敗と備考のクロス考察を構築
     let analysisText = "各試合の備考ログから以下の傾向が分析されました：<br>";
     if(tacticalTags.length) analysisText += `・<strong>戦術配置:</strong> ${tacticalTags.join("および")} を明記した戦略的な試合運用が確認できます。<br>`;
     if(externalFactors.length) analysisText += `・<strong>状況変化:</strong> ${externalFactors.join("")} が発生した試合が多く、戦況に大きな影響を与えている可能性があります。<br>`;
     
-    // 特定の負け試合に備考があれば、そこから課題をピックアップ
     const lossWithNotes = loses.filter(m => m.note);
     if(lossWithNotes.length) {
       analysisText += `・<strong>敗戦期の傾向:</strong> 敗戦した試合（${lossWithNotes.map(m=>'vs '+m.opp).join(", ")}）の配置バランスや、相手の得意なアタックに対するディフェンス陣の布陣を再検証する必要があります。`;
