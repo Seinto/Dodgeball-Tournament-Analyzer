@@ -32,8 +32,8 @@
   --text-success: #27500A;
   --text-danger: #791F1F;
   --text-warning: #633806;
-  --border: rgba(0,0,0,0.04);
-  --border-md: rgba(0,0,0,0.12);
+  --border: rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.18);
   --radius-md: 10px;
   --radius-lg: 16px;
   --blue: #378ADD;
@@ -341,7 +341,7 @@ body {
 
 .match-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -351,15 +351,12 @@ body {
   border-radius: var(--radius-md);
   padding: 12px;
   box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
 }
 .match-opp { font-size: 12px; color: var(--text-primary); margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .score-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
 .score-big { font-size: 24px; font-weight: 700; line-height: 1; }
 .score-vs { font-size: 12px; color: var(--text-secondary); }
-.match-keep { font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
-.match-note-text { font-size: 11px; color: var(--text-secondary); line-height: 1.4; border-top: 1px dashed var(--border-md); padding-top: 6px; margin-top: auto; }
+.match-keep { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
 
 .badge {
   display: inline-block;
@@ -520,7 +517,7 @@ body {
   <div class="input-section" id="inputSection" style="display:none;">
     <div class="input-area-wrapper" id="inputAreaWrapper">
       <input type="text" id="tournamentTitle" class="input-title-field" placeholder="大会名を入力">
-      <textarea id="csvPasteArea" class="data-textarea" placeholder="ここにCSVまたはタブ区切りの試合スタッツデータを貼り付けてください"></textarea>
+      <textarea id="csvPasteArea" class="data-textarea" placeholder="【CSVフォーマット入力例】..."></textarea>
       <button class="btn-submit" onclick="importPastedData()">データを反映する</button>
     </div>
   </div>
@@ -546,16 +543,24 @@ body {
 <script>
 const DEFAULT_DATA = {
   "260607さるぼぼ": {
-    label: "サンプル大会（備考デモ）",
+    label: "さるぼぼカップ（2026/6/7）",
     matches: [
-      { opp:"サンズ①", us:6, them:5, keep:"2:48", result:"勝", note:"相手1名少ない 外野：たくと アタッカー：かなと、ひろと" },
-      { opp:"蒲生①",  us:5, them:2, keep:"2:41", result:"勝", note:"外野：かなと アタッカー：ふうき、れお 相手は最初から外野4人内野3人" },
-      { opp:"三雲①",  us:7, them:5, keep:"1:45", result:"勝", note:"外野：ゆうと アタッカー：かなと、たくと" }
+      { opp:"ガッツJ", us:3, them:6, keep:"1:20", result:"負" },
+      { opp:"島デビ",  us:6, them:3, keep:"3:00", result:"勝" },
+      { opp:"松本G",   us:5, them:3, keep:"2:37", result:"勝" },
+      { opp:"五福D",   us:7, them:2, keep:"3:33", result:"勝" },
+      { opp:"池田",    us:4, them:6, keep:"2:28", result:"負" },
     ],
     players: [
-      { name:"かなと", stats:[{def:[3,0],ia:[2,0],oa:[0,0]},{def:[0,0],ia:[0,0],oa:[0,4]},{def:[1,0],ia:[0,2],oa:[0,0]}] },
-      { name:"ひろと", stats:[{def:[2,0],ia:[0,0],oa:[0,0]},{def:[0,1],ia:[0,0],oa:[0,0]},{def:[1,0],ia:[0,0],oa:[0,0]}] },
-      { name:"たくと", stats:[{def:[0,0],ia:[0,0],oa:[0,5]},{def:[1,0],ia:[0,0],oa:[0,0]},{def:[0,0],ia:[1,0],oa:[0,0]}] }
+      { name:"ようた",   stats:[{def:[0,1],ia:[1,0],oa:[1,3]},{def:[0,0],ia:[3,3],oa:[0,0]},{def:[2,0],ia:[3,1],oa:[0,0]},{def:[0,0],ia:[2,2],oa:[0,0]},{def:[0,1],ia:[0,4],oa:[1,2]}] },
+      { name:"ひろと",   stats:[{def:[0,0],ia:[0,0],oa:[1,0]},{def:[4,0],ia:[0,0],oa:[0,0]},{def:[2,1],ia:[0,0],oa:[0,1]},{def:[0,0],ia:[0,0],oa:[0,1]},{def:[0,0],ia:[0,0],oa:[0,0]}] },
+      { name:"かなと",   stats:[{def:[0,0],ia:[0,1],oa:[0,0]},{def:[1,1],ia:[0,0],oa:[1,0]},{def:[1,0],ia:[0,0],oa:[0,1]},{def:[1,0],ia:[2,0],oa:[0,0]},{def:[0,1],ia:[0,2],oa:[0,0]}] },
+      { name:"たくと",   stats:[{def:[0,1],ia:[0,0],oa:[0,0]},{def:[0,0],ia:[0,0],oa:[0,0]},{def:[0,0],ia:[0,0],oa:[2,3]},{def:[1,0],ia:[2,0],oa:[1,0]},{def:[2,1],ia:[0,0],oa:[0,0]}] },
+      { name:"れお",     stats:[{def:[0,0],ia:[0,0],oa:[0,0]},{def:[3,0],ia:[0,0],oa:[0,0]},{def:[1,1],ia:[0,0],oa:[0,0]},{def:[2,0],ia:[0,0],oa:[0,0]},{def:[2,0],ia:[0,0],oa:[0,0]}] },
+      { name:"ゆうせい", stats:[{def:[1,0],ia:[0,0],oa:[0,0]},{def:[0,1],ia:[0,0],oa:[0,0]},{def:[2,0],ia:[0,0],oa:[0,0]},{def:[1,0],ia:[0,0],oa:[0,0]},{def:[0,0],ia:[0,0],oa:[0,0]}] },
+      { name:"さく",     stats:[{def:[0,1],ia:[0,0],oa:[0,0]},{def:[0,1],ia:[0,0],oa:[0,0]},{def:[0,1],ia:[0,0],oa:[0,0]},{def:[0,1],ia:[0,0],oa:[0,0]},{def:[0,1],ia:[0,0],oa:[0,0]}] },
+      { name:"えいと",   stats:[null,{def:[1,0],ia:[0,0],oa:[0,0]},{def:[0,0],ia:[0,0],oa:[0,0]},{def:[1,0],ia:[0,0],oa:[0,0]},{def:[0,0],ia:[0,0],oa:[0,0]}] },
+      { name:"とき",     stats:[{def:[0,1],ia:[0,0],oa:[0,0]},null,null,null,null] },
     ]
   }
 };
@@ -601,50 +606,72 @@ function exportDataToClipboard() {
   try {
     const jsonStr = JSON.stringify(DATA);
     const encodedData = btoa(unescape(encodeURIComponent(jsonStr)));
+    
     navigator.clipboard.writeText(encodedData).then(() => {
-      alert("現在のすべての大会データをクリップボードにコピーしました！");
+      alert("現在のすべての大会データをクリップボードにコピーしました！\nLINEやメールなどに貼り付けて相手へ送ってください。");
     }).catch(err => {
-      prompt("以下の共有テキストをコピーしてください：", encodedData);
+      prompt("以下の共有テキストをすべて選択してコピーしてください：", encodedData);
     });
-  } catch (e) { alert("データの書き出しに失敗しました。"); }
+  } catch (e) {
+    alert("データの書き出しに失敗しました。");
+    console.error(e);
+  }
 }
 
 function importDataFromText() {
   const text = document.getElementById('sharePasteArea').value.trim();
   if(!text) { alert("共有テキストが入力されていません。"); return; }
-  if(!confirm("現在のデータはすべて上書きされます。よろしいですか？")) return;
+  if(!confirm("共有データを読み込みますか？\n※注意：現在この端末に保存されているデータはすべて上書きされます。")) return;
+
   try {
     const decodedStr = decodeURIComponent(escape(atob(text)));
-    DATA = JSON.parse(decodedStr); saveToStorage();
-    const remainingKeys = Object.keys(DATA);
-    activeTournamentKey = remainingKeys.length > 0 ? remainingKeys[0] : null;
-    initDashboard(); if(activeTournamentKey) switchT(activeTournamentKey);
-    document.getElementById('sharePasteArea').value = ''; toggleShareSection();
-    alert("データの読み込みが完了しました！");
-  } catch(e) { alert("データのインポートに失敗しました。"); }
+    const parsedData = JSON.parse(decodedStr);
+    
+    if (typeof parsedData === 'object' && parsedData !== null) {
+      DATA = parsedData;
+      saveToStorage();
+      
+      const remainingKeys = Object.keys(DATA);
+      activeTournamentKey = remainingKeys.length > 0 ? remainingKeys[0] : null;
+      
+      initDashboard();
+      if(activeTournamentKey) {
+        switchT(activeTournamentKey);
+      }
+      document.getElementById('sharePasteArea').value = '';
+      toggleShareSection();
+      alert("データの同期・復元が完了しました！");
+    } else {
+      alert("無効なデータ形式です。正しいテキストを貼り付けてください。");
+    }
+  } catch(e) {
+    alert("データのインポートに失敗しました。コピーしたテキストが途中で切れていないか確認してください。");
+    console.error(e);
+  }
 }
 
 function buildPrintOnlyMatchTablesHTML(tKey) {
-  const t = DATA[tKey]; if(!t || !t.matches) return '';
+  const t = DATA[tKey];
+  if(!t || !t.matches) return '';
   let h = '<div class="print-only-match-tables">';
   t.matches.forEach((m, idx) => {
-    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + m.result + ' ' + m.us + '-' + m.them + ')</div>';
-    if(m.note) { h += '<div style="font-size:12px; margin-bottom:10px; color:#333; padding:8px; background:#f0f0f0; border-left:3px solid var(--blue)">💡 備考: ' + m.note + '</div>'; }
-    h += '<div class="card">';
+    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + m.result + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
     const rows = calcAll(t.players, idx);
     h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
     rows.forEach(r => {
-      const pObj = t.players.find(p => p.name === r.name); 
-      if(!pObj || !pObj.stats[idx]) return; // 該当試合のスタッツが「-」（ハイフン）の選手は非表示
+      const hasData = t.players.find(p => p.name === r.name);
+      if(!hasData || !hasData.stats[idx]) return;
       h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
     });
     h += '</tbody></table></div></div></div>';
   });
-  h += '</div>'; return h;
+  h += '</div>';
+  return h;
 }
 
 function triggerSmartPrint() {
-  const btn = document.getElementById('pdfBtn'); btn.innerText = "⏳ 準備中...";
+  const btn = document.getElementById('pdfBtn');
+  btn.innerText = "⏳ 準備中...";
   const curKey = activeTournamentKey;
   const printTitle = document.getElementById('printTournamentTitle');
   if(printTitle && DATA[curKey]) printTitle.textContent = DATA[curKey].label;
@@ -652,7 +679,8 @@ function triggerSmartPrint() {
   
   let printContainer = document.getElementById('print_tables_' + curKey);
   if(!printContainer) {
-    printContainer = document.createElement('div'); printContainer.id = 'print_tables_' + curKey;
+    printContainer = document.createElement('div');
+    printContainer.id = 'print_tables_' + curKey;
     document.getElementById('sec_' + curKey).appendChild(printContainer);
   }
   printContainer.innerHTML = buildPrintOnlyMatchTablesHTML(curKey);
@@ -663,14 +691,18 @@ function triggerSmartPrint() {
   setTimeout(() => {
     const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
     canvases.forEach(canvas => {
-      const parent = canvas.parentNode; const oldImg = parent.querySelector('.print-image-fallback');
+      const parent = canvas.parentNode;
+      const oldImg = parent.querySelector('.print-image-fallback');
       if (oldImg) oldImg.remove();
       try {
-        const imgData = canvas.toDataURL('image/png'); const img = document.createElement('img');
-        img.src = imgData; img.className = 'print-image-fallback'; parent.appendChild(img);
+        const imgData = canvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = imgData; img.className = 'print-image-fallback';
+        parent.appendChild(img);
       } catch (e) {}
     });
-    btn.innerText = "📄 PDF出力"; window.print();
+    btn.innerText = "📄 PDF出力";
+    window.print();
     setTimeout(() => {
       const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
       if (activeSubBtn) {
@@ -691,7 +723,9 @@ function deleteTournament(tKey, event) {
   if (remainingKeys.length > 0) {
     if (activeTournamentKey === tKey) activeTournamentKey = remainingKeys[0];
     initDashboard(); switchT(activeTournamentKey);
-  } else { activeTournamentKey = null; initDashboard(); }
+  } else {
+    activeTournamentKey = null; initDashboard();
+  }
 }
 
 function importPastedData() {
@@ -700,65 +734,31 @@ function importPastedData() {
   if(!title || !text) { alert('大会名とデータテキストを入力してください。'); return; }
   try {
     const rawLines = text.split('\n').map(l => l.split(/\t|,/).map(c => c.trim()));
-    if (rawLines.some(l => l[0] && (l[0].includes('対戦相手') || l[0].includes('試合スタッツ')))) {
-      importNewFormat(title, rawLines);
-    } else {
-      importLegacyFormat(title, rawLines);
-    }
-  } catch (e) { alert('データのインポートに失敗しました。形式を確認してください。'); }
+    if (rawLines.some(l => l[0] === '対戦相手' || l[0] === '相手チーム' || l.some(c => String(c).includes('相手')))) { importNewFormat(title, rawLines); } else { importLegacyFormat(title, rawLines); }
+  } catch (e) { alert('データのインポートに失敗しました。'); }
 }
 
 function importNewFormat(title, lines) {
   const blocks = []; let current = null;
   for (const line of lines) {
-    if (line.length === 0 || line.every(c => c === '')) { continue; }
-    
-    if (line[0].includes('試合スタッツ') || line[0] === '対戦相手' || line[0] === '相手チーム') {
-      if (current) blocks.push(current);
-      current = [line];
-    } else if (current) {
-      current.push(line);
-    }
+    if (line[0] === '対戦相手' || line[0] === '相手チーム') { if (current) blocks.push(current); current = [line]; } else if (current) { if (line.every(c => c === '')) continue; current.push(line); }
   }
   if (current) blocks.push(current);
-
-  const validBlocks = blocks.filter(block => {
-    return block.some(line => line[0] === '対戦相手' && line[1] && line[1] !== '');
-  });
-
-  if (validBlocks.length === 0) { alert('有効な試合データブロックが見つかりません。'); return; }
+  if (blocks.length === 0) { alert('データブロックが見つかりません。'); return; }
 
   const matches = []; const jerseyMap = {};
-  validBlocks.forEach((block, matchIdx) => {
-    let opp = '不明'; let keep = '0:00'; let us = 0, them = 0; let note = '';
+  blocks.forEach((block, matchIdx) => {
+    const opp = block[0][1] || '不明'; let keep = '0:00'; let us = 0, them = 0;
     for (const line of block) {
-      if (!line[0] || line[0] === '') continue;
-      if (line[0] === '対戦相手') opp = line[1] || '不明';
-      if (line[0] === 'ボールキープ時間') {
-        const raw = line[1] || '0';
-        if (raw.endsWith('秒')) {
-          const sec = parseInt(raw) || 0;
-          keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0');
-        } else { keep = raw.replace(/^0:/, ''); }
-      }
-      if (line[0] === '結果（見方-相手）') {
-        const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-');
-        const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0;
-      }
-      if (line[0] === '備考' || line[0] === 'メモ') {
-        note = line.slice(1).filter(c => c !== "").join(" ").trim();
-      }
+      if (line[0] === 'ボールキープ時間') { const raw = line[1] || '0'; if (raw.endsWith('秒')) { const sec = parseInt(raw) || 0; keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); } else { keep = raw.replace(/^0:/, ''); } }
+      if (line[0] === '結果（味方-相手）' || line[0] === '結果（見方-相手）') { const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0; }
     }
-    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負', note });
-
+    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負' });
     for (const line of block) {
       const jersey = line[0]; if (!jersey || isNaN(jersey) || jersey === '' || jersey === '背番号') continue;
-      const rawName = line[1] ? line[1].trim() : ''; if(rawName === '' && !line[2]) continue;
-      const playerName = rawName !== '' ? rawName : '背番号' + jersey;
-      const rawNums = line.slice(2); const isDash = rawNums.slice(0,6).every(v => v === '-' || v === '');
-      const nums = rawNums.map(v => parseInt(v) || 0);
-      const stat = (!isDash && rawNums.length >= 6) ? { def: [nums[0], nums[1]], ia: [nums[2], nums[3]], oa: [nums[4], nums[5]] } : null;
-      
+      const rawName = line[1] ? line[1].trim() : ''; const playerName = rawName !== '' ? rawName : '背番号' + jersey;
+      const rawNums = line.slice(2); const isDash = rawNums.every(v => v === '-' || v === ''); const nums = rawNums.map(v => parseInt(v) || 0);
+      const stat = (!isDash && nums.length >= 6) ? { def: [nums[0], nums[1]], ia: [nums[2], nums[3]], oa: [nums[4], nums[5]] } : null;
       if (!jerseyMap[jersey]) { jerseyMap[jersey] = { name: playerName, stats: [] }; }
       if (rawName !== '') jerseyMap[jersey].name = rawName;
       while (jerseyMap[jersey].stats.length < matchIdx) jerseyMap[jersey].stats.push(null);
@@ -769,7 +769,7 @@ function importNewFormat(title, lines) {
   const totalMatches = matches.length;
   const players = Object.keys(jerseyMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(jersey => {
     const pData = jerseyMap[jersey]; while (pData.stats.length < totalMatches) pData.stats.push(null); return { name: pData.name, stats: pData.stats };
-  }).filter(p => p.name !== "" && p.stats.some(s => s !== null));
+  }).filter(p => p.stats.some(s => s !== null));
 
   const newKey = 't_' + Date.now(); DATA[newKey] = { label: title, matches, players }; saveToStorage();
   activeTournamentKey = newKey; initDashboard(); switchT(newKey);
@@ -779,22 +779,23 @@ function importNewFormat(title, lines) {
 function importLegacyFormat(title, lines) {
   const firstLine = lines[0] || []; const oppTeams = [];
   for(let i=0; i<firstLine.length; i++) {
-    if(firstLine[i] && !['ディフェンス','内野アタック','外野アタック','○','×','選手','ボールキープ時間','結果（見方-相手）'].includes(firstLine[i])) { if(!oppTeams.includes(firstLine[i])) oppTeams.push(firstLine[i]); }
+    if(firstLine[i] && !['ディフェンス','内野アタック','外野アタック','○','×','選手','ボールキープ時間','結果（味方-相手）','結果（見方-相手）'].includes(firstLine[i])) { if(!oppTeams.includes(firstLine[i])) oppTeams.push(firstLine[i]); }
   }
   const matches = []; let keepTimes = []; let matchResults = [];
   lines.forEach(line => {
     if (line.includes('ボールキープ時間')) keepTimes = line.filter(c => c && c !== 'ボールキープ時間').map(t => t.replace(/^0:/, ''));
+    if (line.includes('結果（味方-相手）')) matchResults = line.filter(c => c && c !== '結果（味方-相手）');
     if (line.includes('結果（見方-相手）')) matchResults = line.filter(c => c && c !== '結果（見方-相手）');
   });
   oppTeams.forEach((opp, index) => {
     const scoreStr = matchResults[index] || "0-0"; const [us, them] = scoreStr.replace(/減|−/g, '-').split('-').map(Number);
-    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: us > them ? "勝" : "負", note: "" });
+    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: us > them ? "勝" : "負" });
   });
 
   const players = []; let startProcessingPlayers = false;
   for(let i=0; i<lines.length; i++) {
     const line = lines[i]; if(line.includes('ようた') || (line[1] && line[1] === 'ようた') || (line[0] && line[0] === 'ようた')) startProcessingPlayers = true;
-    if(line.includes('ボールキープ時間') || line.includes('結果（見方-相手）')) startProcessingPlayers = false;
+    if(line.includes('ボールキープ時間') || line.includes('結果（味方-相手）') || line.includes('結果（見方-相手）')) startProcessingPlayers = false;
     if(startProcessingPlayers) {
       let nameIdx = line.indexOf('ようた') !== -1 ? line.indexOf('ようた') : -1;
       if(nameIdx === -1) { for(let k=0; k<line.length; k++) { if(line[k] && isNaN(line[k]) && !['-','○','×'].includes(line[k])) { nameIdx = k; break; } } }
@@ -815,7 +816,7 @@ function importLegacyFormat(title, lines) {
 
 function calcAll(players, midx){
   return players.map(p=>{
-    let dO=0,dX=0,iO=0,iX=0,oO=0,oX=0; const idxs = midx==="all"?[0,1,2,3,4,5,6,7,8,9,10,11,12]:[parseInt(midx)];
+    let dO=0,dX=0,iO=0,iX=0,oO=0,oX=0; const idxs = midx==="all"?[0,1,2,3,4,5,6,7,8,9]:[parseInt(midx)];
     idxs.forEach(i=>{ if(p.stats && p.stats[i]) { const s=p.stats[i]; dO+=s.def[0];dX+=s.def[1];iO+=s.ia[0];iX+=s.ia[1];oO+=s.oa[0];oX+=s.oa[1]; } });
     const dr=(dO+dX)>0?Math.round(dO/(dO+dX)*100):null; const ir=(iO+iX)>0?Math.round(iO/(iO+iX)*100):null; const or2=(oO+oX)>0?Math.round(oO/(oO+oX)*100):null;
     const ta=iO+iX+oO+oX, taO=iO+oO; const ar=ta>0?Math.round(taO/ta*100):null;
@@ -833,19 +834,7 @@ function renderPTable(tKey, midx){
   const rows = calcAll(DATA[tKey].players, midx);
   let h = '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    const pObj = DATA[tKey].players.find(p=>p.name===r.name); 
-    if(!pObj) return;
-    
-    // 【判定条件の修正】
-    if(midx === "all") {
-      // 全試合表示の時、全試合のスタッツがすべて「-」の選手はスキップ
-      if(pObj.stats.every(s => s === null)) return;
-    } else {
-      // 特定の試合を表示している時、その試合のスタッツが「-」の選手はスキップ
-      const idx = parseInt(midx);
-      if(!pObj.stats[idx]) return;
-    }
-
+    const hasData = DATA[tKey].players.find(p=>p.name===r.name); if(!hasData || hasData.stats.every(s=>s===null||s===undefined)) return;
     h+='<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
   });
   h+='</tbody></table></div>'; document.getElementById('ptbl_'+tKey).innerHTML=h;
@@ -899,12 +888,7 @@ function buildMatchHTML(t, tKey){
   const wins = t.matches.filter(m=>m.result==="勝").length; const ts = t.matches.reduce((a,m)=>a+m.us,0); const os = t.matches.reduce((a,m)=>a+m.them,0); const diff = ts - os; const maxK = Math.max.apply(null, t.matches.map(m=>keepSec(m.keep)));
   let h = '<div class="metrics"><div class="metric"><div class="metric-label">試合数</div><div class="metric-value">'+t.matches.length+'</div></div><div class="metric"><div class="metric-label">勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+wins+'勝</span> <span style="color:#A32D2D">'+(t.matches.length-wins)+'敗</span></div></div><div class="metric"><div class="metric-label">総得点</div><div class="metric-value">'+ts+'</div></div><div class="metric"><div class="metric-label">総失点</div><div class="metric-value">'+os+'</div></div><div class="metric"><div class="metric-label">得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
   h += '<div class="match-grid">';
-  t.matches.forEach(function(m){ 
-    var wl = m.result==="勝"; 
-    h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(wl?'#3B6D11':'#A32D2D')+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div>';
-    if(m.note) { h += '<div class="match-note-text">💡 ' + m.note + '</div>'; }
-    h += '</div>'; 
-  });
+  t.matches.forEach(function(m){ var wl = m.result==="勝"; h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(wl?'#3B6D11':'#A32D2D')+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div></div>'; });
   h += '</div>';
   h += '<div class="card"><div class="card-title">ボールキープ時間（対戦別）</div>';
   t.matches.forEach(function(m){ var sec = keepSec(m.keep); var pct = maxK > 0 ? Math.round(sec/maxK*100) : 0; var wl = m.result==="勝"; h += '<div class="keep-row"><div class="keep-label">vs '+m.opp+'</div><div class="keep-bg"><div class="keep-fill" style="width:'+pct+'%;background:'+(wl?'#1D9E75':'#D85A30')+'"></div></div><div class="keep-val">'+m.keep+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div></div>'; });
@@ -931,43 +915,14 @@ function buildInsightHTML(t, tKey){
   const uaRate = totalUA>0?Math.round(uaSucc/totalUA*100):0; const oaRate = totalOA>0?Math.round(oaSucc/totalOA*100):0;
   const totalDef = rows.reduce((a,r)=>a+r.dO+r.dX,0); const defSucc = rows.reduce((a,r)=>a+r.dO,0); const teamDefRate = totalDef>0?Math.round(defSucc/totalDef*100):0;
 
-  let noteInsights = "登録された試合備考がありません。";
-  if (t.matches.some(m => m.note)) {
-    const allNotes = t.matches.map(m => m.note).join(" ");
-    let tacticalTags = [];
-    let externalFactors = [];
-    
-    if(allNotes.includes("外野：")) tacticalTags.push('<span class="hl hl-blue">固定外野・役割戦略</span>');
-    if(allNotes.includes("アタッカー：")) tacticalTags.push('<span class="hl hl-green">特定アタッカー集中攻撃</span>');
-    
-    if(allNotes.includes("少ない") || allNotes.includes("人数")) {
-      externalFactors.push('<span class="hl hl-amber">相手の人数不利・変則フォーメーション</span>');
-    }
-    
-    let analysisText = "各試合の備考ログから以下の傾向が分析されました：<br>";
-    if(tacticalTags.length) analysisText += `・<strong>戦術配置:</strong> ${tacticalTags.join("および")} を明記した戦略的な試合運用が確認できます。<br>`;
-    if(externalFactors.length) analysisText += `・<strong>状況変化:</strong> ${externalFactors.join("")} が発生した試合が多く、戦況に大きな影響を与えている可能性があります。<br>`;
-    
-    const lossWithNotes = loses.filter(m => m.note);
-    if(lossWithNotes.length) {
-      analysisText += `・<strong>敗戦期の傾向:</strong> 敗戦した試合（${lossWithNotes.map(m=>'vs '+m.opp).join(", ")}）の配置バランスや、相手の得意なアタックに対するディフェンス陣の布陣を再検証する必要があります。`;
-    } else {
-      analysisText += `・<strong>安定性:</strong> 備考が記録された試合では高い勝率（${wins.length}/${t.matches.length}）を維持できており、指示や役割設定が明瞭である時ほど有利に運べています。`;
-    }
-
-    let noteSummaries = t.matches.filter(m => m.note).map(m => `<li><strong>vs ${m.opp} (${m.result} ${m.us}-${m.them}):</strong> ${m.note}</li>`).join("");
-    noteInsights = `${analysisText}<ul style="margin-left:16px; margin-top:10px; font-size:12px; display:flex; flex-direction:column; gap:6px;">${noteSummaries}</ul>`;
-  }
-
   const findings = [
-    { icon:"📝", cls:"fi-amber", title:"戦評・備考からの定性・役割分析", desc: noteInsights },
     { icon:"⏱", cls:"fi-blue", title:"キープ時間と勝敗の相関", desc:'勝利試合の平均キープ時間は<span class="hl hl-green">'+fmtSec(winKeepAvg)+'</span>、敗戦試合は<span class="hl hl-red">'+fmtSec(loseKeepAvg)+'</span>。キープが長い試合ほど得点につながる傾向がある。' },
     { icon:"🎯", cls:"fi-amber", title:"内野 vs 外野アタック効率", desc:'内野アタック成功率は<span class="hl hl-blue">'+uaRate+'%</span>（'+uaSucc+'/'+totalUA+'）、外野アタック成功率は<span class="hl hl-blue">'+oaRate+'%</span>（'+oaSucc+'/'+totalOA+'）。内野アタック精度を軸に組み立てることが重要。' },
     { icon:"🛡", cls:"fi-green", title:"チーム全体のディフェンス", desc:'チーム全体のディフェンス成功率は<span class="hl hl-green">'+teamDefRate+'%</span>（'+defSucc+'/'+totalDef+'）。最も成功率が高いのは<span class="hl hl-blue">'+(topDef?topDef.name:"-")+'</span>'+(topDef?"（"+topDef.dr+"%）":"")+'。防衛ラインの維持が勝敗の鍵。' },
-    { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分分担の最適化が確認できます。' }
+    { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分担の最適化が確認できます。' }
   ];
   let h = '<div class="card"><div class="finding-list">';
-  findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div style="flex:1;"><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
+  findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
   h += '</div></div>';
   h += '<div class="card" style="margin-top:12px"><div class="card-title">キープ時間と得点差の相関</div><div class="legend"><span><span class="leg-box" style="background:#378ADD;border-radius:50%;width:10px;height:10px"></span>勝利</span><span><span class="leg-box" style="background:#E24A4A;border-radius:50%;width:10px;height:10px"></span>敗戦</span></div><div class="chart-container" style="height:200px"><canvas id="scatterChart_'+tKey+'"></canvas></div></div>';
   h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_'+tKey+'"></canvas></div></div>';
@@ -1001,12 +956,12 @@ function initDashboard() {
   tKeys.forEach(function(tKey, i){
     var t = DATA[tKey]; var wrapper = document.createElement('div');
     wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : ''); wrapper.id = 'tabwrap_' + tKey;
-    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
+    wrapper.onclick = wrapper.onclick = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
 
     var tabEl = document.createElement('button'); tabEl.className = 'tournament-tab'; tabEl.textContent = t.label;
     var delBtn = document.createElement('button'); delBtn.className = 'btn-delete-tab'; delBtn.innerHTML = '×';
     const doDelete = function(e){ e.stopPropagation(); e.preventDefault(); deleteTournament(tKey, e); };
-    delBtn.onclick = delBtn.ontouchend = doDelete;
+    delBtn.onclick = delBtn.onclick = doDelete;
 
     wrapper.appendChild(tabEl); wrapper.appendChild(delBtn); tTabs.appendChild(wrapper);
 
