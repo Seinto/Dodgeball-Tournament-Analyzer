@@ -341,7 +341,7 @@ body {
 
 .match-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -356,7 +356,8 @@ body {
 .score-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
 .score-big { font-size: 24px; font-weight: 700; line-height: 1; }
 .score-vs { font-size: 12px; color: var(--text-secondary); }
-.match-keep { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.match-keep { font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
+.match-note { font-size: 11px; color: var(--text-warning); background: var(--bg-warning); padding: 4px 6px; border-radius: 4px; margin-top: 4px; font-weight: 500; word-break: break-all; }
 
 .badge {
   display: inline-block;
@@ -367,6 +368,7 @@ body {
 }
 .badge-win { background: var(--bg-success); color: var(--text-success); }
 .badge-lose { background: var(--bg-danger); color: var(--text-danger); }
+.badge-draw { background: var(--bg-secondary); color: var(--text-secondary); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; font-size: 11px; color: var(--text-secondary); font-weight: 500; }
 .legend span { display: flex; align-items: center; gap: 5px; }
@@ -545,11 +547,11 @@ const DEFAULT_DATA = {
   "260607さるぼぼ": {
     label: "さるぼぼカップ（2026/6/7）",
     matches: [
-      { opp:"ガッツJ", us:3, them:6, keep:"1:20", result:"負" },
-      { opp:"島デビ",  us:6, them:3, keep:"3:00", result:"勝" },
-      { opp:"松本G",   us:5, them:3, keep:"2:37", result:"勝" },
-      { opp:"五福D",   us:7, them:2, keep:"3:33", result:"勝" },
-      { opp:"池田",    us:4, them:6, keep:"2:28", result:"負" },
+      { opp:"ガッツJ", us:3, them:6, keep:"1:20", result:"負", notes:"" },
+      { opp:"島デビ",  us:6, them:3, keep:"3:00", result:"勝", notes:"" },
+      { opp:"松本G",   us:5, them:3, keep:"2:37", result:"勝", notes:"" },
+      { opp:"五福D",   us:7, them:2, keep:"3:33", result:"勝", notes:"" },
+      { opp:"池田",    us:4, them:6, keep:"2:28", result:"負", notes:"" },
     ],
     players: [
       { name:"ようた",   stats:[{def:[0,1],ia:[1,0],oa:[1,3]},{def:[0,0],ia:[3,3],oa:[0,0]},{def:[2,0],ia:[3,1],oa:[0,0]},{def:[0,0],ia:[2,2],oa:[0,0]},{def:[0,1],ia:[0,4],oa:[1,2]}] },
@@ -655,7 +657,8 @@ function buildPrintOnlyMatchTablesHTML(tKey) {
   if(!t || !t.matches) return '';
   let h = '<div class="print-only-match-tables">';
   t.matches.forEach((m, idx) => {
-    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + m.result + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
+    let resLabel = m.result;
+    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + resLabel + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
     const rows = calcAll(t.players, idx);
     h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
     rows.forEach(r => {
@@ -734,7 +737,7 @@ function importPastedData() {
   if(!title || !text) { alert('大会名とデータテキストを入力してください。'); return; }
   try {
     const rawLines = text.split('\n').map(l => l.split(/\t|,/).map(c => c.trim()));
-    if (rawLines.some(l => l[0] === '対戦相手' || l[0] === '相手チーム' || l.some(c => String(c).includes('相手')))) { importNewFormat(title, rawLines); } else { importLegacyFormat(title, rawLines); }
+    if (rawLines.some(l => l[0] === '対戦相手' || l[0] === '相手チーム')) { importNewFormat(title, rawLines); } else { importLegacyFormat(title, rawLines); }
   } catch (e) { alert('データのインポートに失敗しました。'); }
 }
 
@@ -748,17 +751,29 @@ function importNewFormat(title, lines) {
 
   const matches = []; const jerseyMap = {};
   blocks.forEach((block, matchIdx) => {
-    const opp = block[0][1] || '不明'; let keep = '0:00'; let us = 0, them = 0;
+    const opp = block[0][1] || '不明'; let keep = '0:00'; let us = 0, them = 0; let notes = '';
     for (const line of block) {
       if (line[0] === 'ボールキープ時間') { const raw = line[1] || '0'; if (raw.endsWith('秒')) { const sec = parseInt(raw) || 0; keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); } else { keep = raw.replace(/^0:/, ''); } }
-      if (line[0] === '結果（味方-相手）' || line[0] === '結果（見方-相手）') { const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0; }
+      if (line[0] === '結果（見方-相手）' || line[0] === '結果（味方-相手）') { const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0; }
+      if (line[0] === '備考') { notes = line[1] || ''; }
     }
-    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負' });
+    
+    let resText = "引き分け";
+    if (us > them) resText = "勝";
+    if (us < them) resText = "負";
+    matches.push({ opp, us, them, keep, result: resText, notes });
+    
     for (const line of block) {
       const jersey = line[0]; if (!jersey || isNaN(jersey) || jersey === '' || jersey === '背番号') continue;
       const rawName = line[1] ? line[1].trim() : ''; const playerName = rawName !== '' ? rawName : '背番号' + jersey;
-      const rawNums = line.slice(2); const isDash = rawNums.every(v => v === '-' || v === ''); const nums = rawNums.map(v => parseInt(v) || 0);
-      const stat = (!isDash && nums.length >= 6) ? { def: [nums[0], nums[1]], ia: [nums[2], nums[3]], oa: [nums[4], nums[5]] } : null;
+      const rawNums = line.slice(2);
+      
+      // ★修正：スタッツが全てハイフン、または空欄の場合は選手登録対象(この試合)から省く
+      const isDash = rawNums.every(v => v === '-' || v === '');
+      if (isDash) continue; 
+      
+      const nums = rawNums.map(v => parseInt(v) || 0);
+      const stat = (nums.length >= 6) ? { def: [nums[0], nums[1]], ia: [nums[2], nums[3]], oa: [nums[4], nums[5]] } : null;
       if (!jerseyMap[jersey]) { jerseyMap[jersey] = { name: playerName, stats: [] }; }
       if (rawName !== '') jerseyMap[jersey].name = rawName;
       while (jerseyMap[jersey].stats.length < matchIdx) jerseyMap[jersey].stats.push(null);
@@ -779,23 +794,25 @@ function importNewFormat(title, lines) {
 function importLegacyFormat(title, lines) {
   const firstLine = lines[0] || []; const oppTeams = [];
   for(let i=0; i<firstLine.length; i++) {
-    if(firstLine[i] && !['ディフェンス','内野アタック','外野アタック','○','×','選手','ボールキープ時間','結果（味方-相手）','結果（見方-相手）'].includes(firstLine[i])) { if(!oppTeams.includes(firstLine[i])) oppTeams.push(firstLine[i]); }
+    if(firstLine[i] && !['ディフェンス','内野アタック','外野アタック','○','×','選手','ボールキープ時間','結果（見方-相手）','結果（味方-相手）'].includes(firstLine[i])) { if(!oppTeams.includes(firstLine[i])) oppTeams.push(firstLine[i]); }
   }
   const matches = []; let keepTimes = []; let matchResults = [];
   lines.forEach(line => {
     if (line.includes('ボールキープ時間')) keepTimes = line.filter(c => c && c !== 'ボールキープ時間').map(t => t.replace(/^0:/, ''));
-    if (line.includes('結果（味方-相手）')) matchResults = line.filter(c => c && c !== '結果（味方-相手）');
-    if (line.includes('結果（見方-相手）')) matchResults = line.filter(c => c && c !== '結果（見方-相手）');
+    if (line.includes('結果（見方-相手）') || line.includes('結果（味方-相手）')) matchResults = line.filter(c => c && c !== '結果（見方-相手）' && c !== '結果（味方-相手）');
   });
   oppTeams.forEach((opp, index) => {
     const scoreStr = matchResults[index] || "0-0"; const [us, them] = scoreStr.replace(/減|−/g, '-').split('-').map(Number);
-    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: us > them ? "勝" : "負" });
+    let resText = "引き分け";
+    if (us > them) resText = "勝";
+    if (us < them) resText = "負";
+    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: resText, notes: "" });
   });
 
   const players = []; let startProcessingPlayers = false;
   for(let i=0; i<lines.length; i++) {
     const line = lines[i]; if(line.includes('ようた') || (line[1] && line[1] === 'ようた') || (line[0] && line[0] === 'ようた')) startProcessingPlayers = true;
-    if(line.includes('ボールキープ時間') || line.includes('結果（味方-相手）') || line.includes('結果（見方-相手）')) startProcessingPlayers = false;
+    if(line.includes('ボールキープ時間') || line.includes('結果（見方-相手）') || line.includes('結果（味方-相手）')) startProcessingPlayers = false;
     if(startProcessingPlayers) {
       let nameIdx = line.indexOf('ようた') !== -1 ? line.indexOf('ようた') : -1;
       if(nameIdx === -1) { for(let k=0; k<line.length; k++) { if(line[k] && isNaN(line[k]) && !['-','○','×'].includes(line[k])) { nameIdx = k; break; } } }
@@ -816,7 +833,7 @@ function importLegacyFormat(title, lines) {
 
 function calcAll(players, midx){
   return players.map(p=>{
-    let dO=0,dX=0,iO=0,iX=0,oO=0,oX=0; const idxs = midx==="all"?[0,1,2,3,4,5,6,7,8,9]:[parseInt(midx)];
+    let dO=0,dX=0,iO=0,iX=0,oO=0,oX=0; const idxs = midx==="all"?[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]:[parseInt(midx)];
     idxs.forEach(i=>{ if(p.stats && p.stats[i]) { const s=p.stats[i]; dO+=s.def[0];dX+=s.def[1];iO+=s.ia[0];iX+=s.ia[1];oO+=s.oa[0];oX+=s.oa[1]; } });
     const dr=(dO+dX)>0?Math.round(dO/(dO+dX)*100):null; const ir=(iO+iX)>0?Math.round(iO/(iO+iX)*100):null; const or2=(oO+oX)>0?Math.round(oO/(oO+oX)*100):null;
     const ta=iO+iX+oO+oX, taO=iO+oO; const ar=ta>0?Math.round(taO/ta*100):null;
@@ -835,6 +852,8 @@ function renderPTable(tKey, midx){
   let h = '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
   rows.forEach(r=>{
     const hasData = DATA[tKey].players.find(p=>p.name===r.name); if(!hasData || hasData.stats.every(s=>s===null||s===undefined)) return;
+    // 現在の表示対象フィルタ（単一試合等）でデータがあるか、allの場合は全体の計算
+    if(midx !== 'all' && (!hasData.stats[parseInt(midx)])) return;
     h+='<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
   });
   h+='</tbody></table></div>'; document.getElementById('ptbl_'+tKey).innerHTML=h;
@@ -847,11 +866,18 @@ function setF(tKey, midx, btn){
 function buildAllCharts(tKey){
   const t = DATA[tKey]; if(!t || !t.matches || t.matches.length === 0) return;
   dc('matchChart_'+tKey);
+  
+  const matchColors = t.matches.map(m => {
+    if(m.result === '勝') return '#378ADD';
+    if(m.result === '負') return '#85B7EB';
+    return '#6c757d';
+  });
+
   charts['matchChart_'+tKey] = new Chart(document.getElementById('matchChart_'+tKey),{
     data:{
       labels:t.matches.map(m=>'vs '+m.opp),
       datasets:[
-        {type:'bar',label:'得点',data:t.matches.map(m=>m.us),backgroundColor:t.matches.map(m=>m.result==='勝'?'#378ADD':'#85B7EB'),yAxisID:'y'},
+        {type:'bar',label:'得点',data:t.matches.map(m=>m.us),backgroundColor:matchColors,yAxisID:'y'},
         {type:'bar',label:'失点',data:t.matches.map(m=>m.them),backgroundColor:'#F09595',yAxisID:'y'},
         {type:'line',label:'キープ(秒)',data:t.matches.map(m=>keepSec(m.keep)),borderColor:'#1D9E75',backgroundColor:'transparent',pointBackgroundColor:'#1D9E75',tension:0.3,yAxisID:'y2',borderDash:[4,3]},
       ]
@@ -869,10 +895,10 @@ function buildAllCharts(tKey){
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{grid:{display:false},ticks:{autoSkip:false,maxRotation:0,font:{size:11}}}}}
   });
 
-  dc('scatterChart_'+tKey); const scatterData = t.matches.map(m=>({x:keepSec(m.keep),y:m.us-m.them,label:'vs '+m.opp,win:m.result==="勝"}));
+  dc('scatterChart_'+tKey); const scatterData = t.matches.map(m=>({x:keepSec(m.keep),y:m.us-m.them,label:'vs '+m.opp,win:m.result==="勝", draw:m.result==="引き分け"}));
   charts['scatterChart_'+tKey] = new Chart(document.getElementById('scatterChart_'+tKey),{
     type:'scatter',
-    data:{datasets:[{label:'試合',data:scatterData.map(d=>({x:d.x,y:d.y})),backgroundColor:scatterData.map(d=>d.win?'#378ADD':'#E24B4A'),pointRadius:9,pointHoverRadius:11}]},
+    data:{datasets:[{label:'試合',data:scatterData.map(d=>({x:d.x,y:d.y})),backgroundColor:scatterData.map(d=>d.win?'#378ADD':(d.draw?'#6c757d':'#E24B4A')),pointRadius:9,pointHoverRadius:11}]},
     options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var d=scatterData[ctx.dataIndex];return d.label+'：キープ'+fmtSec(d.x)+' 得失点差'+(d.y>=0?'+':'')+d.y;}}}},scales:{x:{title:{display:true,text:'キープ時間（秒）',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{title:{display:true,text:'得失点差',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}}},layout:{padding:20}}
   });
 
@@ -885,15 +911,34 @@ function buildAllCharts(tKey){
 }
 
 function buildMatchHTML(t, tKey){
-  const wins = t.matches.filter(m=>m.result==="勝").length; const ts = t.matches.reduce((a,m)=>a+m.us,0); const os = t.matches.reduce((a,m)=>a+m.them,0); const diff = ts - os; const maxK = Math.max.apply(null, t.matches.map(m=>keepSec(m.keep)));
-  let h = '<div class="metrics"><div class="metric"><div class="metric-label">試合数</div><div class="metric-value">'+t.matches.length+'</div></div><div class="metric"><div class="metric-label">勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+wins+'勝</span> <span style="color:#A32D2D">'+(t.matches.length-wins)+'敗</span></div></div><div class="metric"><div class="metric-label">総得点</div><div class="metric-value">'+ts+'</div></div><div class="metric"><div class="metric-label">総失点</div><div class="metric-value">'+os+'</div></div><div class="metric"><div class="metric-label">得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
+  const wins = t.matches.filter(m=>m.result==="勝").length;
+  const loses = t.matches.filter(m=>m.result==="負").length;
+  const draws = t.matches.filter(m=>m.result==="引き分け").length;
+  const ts = t.matches.reduce((a,m)=>a+m.us,0); const os = t.matches.reduce((a,m)=>a+m.them,0); const diff = ts - os; const maxK = Math.max.apply(null, t.matches.map(m=>keepSec(m.keep)));
+  
+  let h = '<div class="metrics"><div class="metric"><div class="metric-label">試合数</div><div class="metric-value">'+t.matches.length+'</div></div><div class="metric"><div class="metric-label">勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+wins+'勝</span> <span style="color:#A32D2D">'+loses+'敗</span>' + (draws > 0 ? ' <span style="color:var(--text-secondary)">'+draws+'分</span>' : '') + '</div></div><div class="metric"><div class="metric-label">総得点</div><div class="metric-value">'+ts+'</div></div><div class="metric"><div class="metric-label">総失点</div><div class="metric-value">'+os+'</div></div><div class="metric"><div class="metric-label">得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
   h += '<div class="match-grid">';
-  t.matches.forEach(function(m){ var wl = m.result==="勝"; h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(wl?'#3B6D11':'#A32D2D')+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div></div>'; });
+  t.matches.forEach(function(m){ 
+    var badgeCls = 'badge-win';
+    if(m.result === '負') badgeCls = 'badge-lose';
+    if(m.result === '引き分け') badgeCls = 'badge-draw';
+    
+    // 備考（Notes）がある場合はカード内に出力する
+    let noteHTML = m.notes ? '<div class="match-note">📝 ' + m.notes + '</div>' : '';
+
+    h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+badgeCls+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(m.result==='勝'?'#3B6D11':(m.result==='負'?'#A32D2D':'var(--text-primary)'))+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div>'+noteHTML+'</div>'; 
+  });
   h += '</div>';
   h += '<div class="card"><div class="card-title">ボールキープ時間（対戦別）</div>';
-  t.matches.forEach(function(m){ var sec = keepSec(m.keep); var pct = maxK > 0 ? Math.round(sec/maxK*100) : 0; var wl = m.result==="勝"; h += '<div class="keep-row"><div class="keep-label">vs '+m.opp+'</div><div class="keep-bg"><div class="keep-fill" style="width:'+pct+'%;background:'+(wl?'#1D9E75':'#D85A30')+'"></div></div><div class="keep-val">'+m.keep+' <span class="badge '+(wl?'badge-win':'badge-lose')+'">'+m.result+'</span></div></div>'; });
+  t.matches.forEach(function(m){ 
+    var sec = keepSec(m.keep); var pct = maxK > 0 ? Math.round(sec/maxK*100) : 0; 
+    var badgeCls = 'badge-win';
+    if(m.result === '負') badgeCls = 'badge-lose';
+    if(m.result === '引き分け') badgeCls = 'badge-draw';
+    h += '<div class="keep-row"><div class="keep-label">vs '+m.opp+'</div><div class="keep-bg"><div class="keep-fill" style="width:'+pct+'%;background:'+(m.result==='勝'?'#1D9E75':(m.result==='負'?'#D85A30':'#6c757d'))+'"></div></div><div class="keep-val">'+m.keep+' <span class="badge '+badgeCls+'">'+m.result+'</span></div></div>'; 
+  });
   h += '</div>';
-  h += '<div class="card"><div class="card-title">得失点・キープ時間（試合別）</div><div class="legend"><span><span class="leg-box" style="background:#378ADD"></span>得点（勝）</span><span><span class="leg-box" style="background:#85B7EB"></span>得点（負）</span><span><span class="leg-box" style="background:#F09595"></span>失点</span><span><span class="leg-box" style="background:#1D9E75;width:18px;height:3px;border-radius:0;margin-top:3px"></span>キープ(秒)</span></div><div class="chart-container" style="height:200px"><canvas id="matchChart_'+tKey+'"></canvas></div></div>';
+  h += '<div class="card"><div class="card-title">得失点・キープ時間（試合別）</div><div class="legend"><span><span class="leg-box" style="background:#378ADD"></span>得点（勝）</span><span><span class="leg-box" style="background:#85B7EB"></span>得点（負）</span><span><span class="leg-box" style="background:#6c757d"></span>得点（分）</span><span><span class="leg-box" style="background:#F09595"></span>失点</span><span><span class="leg-box" style="background:#1D9E75;width:18px;height:3px;border-radius:0;margin-top:3px"></span>キープ(秒)</span></div><div class="chart-container" style="height:200px"><canvas id="matchChart_'+tKey+'"></canvas></div></div>';
   return h;
 }
 
@@ -924,7 +969,7 @@ function buildInsightHTML(t, tKey){
   let h = '<div class="card"><div class="finding-list">';
   findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
   h += '</div></div>';
-  h += '<div class="card" style="margin-top:12px"><div class="card-title">キープ時間と得点差の相関</div><div class="legend"><span><span class="leg-box" style="background:#378ADD;border-radius:50%;width:10px;height:10px"></span>勝利</span><span><span class="leg-box" style="background:#E24A4A;border-radius:50%;width:10px;height:10px"></span>敗戦</span></div><div class="chart-container" style="height:200px"><canvas id="scatterChart_'+tKey+'"></canvas></div></div>';
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">キープ時間と得点差の相関</div><div class="legend"><span><span class="leg-box" style="background:#378ADD;border-radius:50%;width:10px;height:10px"></span>勝利</span><span><span class="leg-box" style="background:#6c757d;border-radius:50%;width:10px;height:10px"></span>引分</span><span><span class="leg-box" style="background:#E24A4A;border-radius:50%;width:10px;height:10px"></span>敗戦</span></div><div class="chart-container" style="height:200px"><canvas id="scatterChart_'+tKey+'"></canvas></div></div>';
   h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_'+tKey+'"></canvas></div></div>';
   return h;
 }
@@ -956,12 +1001,12 @@ function initDashboard() {
   tKeys.forEach(function(tKey, i){
     var t = DATA[tKey]; var wrapper = document.createElement('div');
     wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : ''); wrapper.id = 'tabwrap_' + tKey;
-    wrapper.onclick = wrapper.onclick = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
+    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
 
     var tabEl = document.createElement('button'); tabEl.className = 'tournament-tab'; tabEl.textContent = t.label;
     var delBtn = document.createElement('button'); delBtn.className = 'btn-delete-tab'; delBtn.innerHTML = '×';
     const doDelete = function(e){ e.stopPropagation(); e.preventDefault(); deleteTournament(tKey, e); };
-    delBtn.onclick = delBtn.onclick = doDelete;
+    delBtn.onclick = delBtn.ontouchend = doDelete;
 
     wrapper.appendChild(tabEl); wrapper.appendChild(delBtn); tTabs.appendChild(wrapper);
 
