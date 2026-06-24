@@ -766,8 +766,8 @@ function importNewFormat(title, lines) {
 
   const matches = []; const jerseyMap = {};
   
-  blocks.forEach((block, matchIdx) => {
-    let opp = '不明'; let keep = '0:00'; let us = 0, them = 0;
+    blocks.forEach((block, matchIdx) => {
+    let opp = '不明'; let keep = '0:00'; let us = 0, them = 0; let notes = ''; // notesを変数として追加
     
     // 試合情報の解析
     for (const line of block) {
@@ -796,8 +796,14 @@ function importNewFormat(title, lines) {
           them = parts[1] || 0;
         }
       }
+      // 【追加】「備考」の行があれば中身を取得
+      if (line[0] && line[0].indexOf('備考') !== -1) {
+        notes = line[1] || '';
+      }
     }
-    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負' });
+    // 【修正】オブジェクトに notes を追加
+    matches.push({ opp, us, them, keep, result: us > them ? '勝' : '負', notes });
+
     
     // 選手スタッツの解析
     for (const line of block) {
