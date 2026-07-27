@@ -96,6 +96,20 @@ body {
   color: var(--text-primary);
   text-align: left;
 }
+.version-badge {
+  position: fixed;
+  top: 6px;
+  right: 8px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 8px;
+  z-index: 1000;
+  opacity: 0.85;
+  pointer-events: none;
+}
 .btn-api-settings {
   background: var(--bg-secondary);
   border: 1px solid var(--border-md);
@@ -593,6 +607,8 @@ body {
 </head>
 <body>
 <div id="printTournamentTitle" style="display:none;"></div>
+
+<div class="version-badge">v1.5.0</div>
 
 <div class="app-header">
   <div class="header-top">
@@ -1170,10 +1186,13 @@ async function generateGeminiInsight(tKey) {
   
   // プロンプトデータの準備
   const matchSummary = t.matches.map(m => `・vs ${m.opp}: ${m.result} (${m.us}-${m.them}), キープ:${m.keep}`).join('\n');
-  const playerSummary = rows.map(r => `・${r.name}: DF率=${r.dr !== null ? r.dr + '%' : 'データなし'}, 内野AT率=${r.ir !== null ? r.ir + '%' : 'データなし'}, 外野AT率=${r.or !== null ? r.or + '%' : 'データなし'}`).join('\n');
+  const playerSummary = rows.map(r => `・${r.name}: アタック試投数=${r.ta}, DF率=${r.dr !== null ? r.dr + '%' : 'データなし'}, 内野AT率=${r.ir !== null ? r.ir + '%' : 'データなし'}, 外野AT率=${r.or !== null ? r.or + '%' : 'データなし'}`).join('\n');
 
   const promptText = `あなたはドッジボールの優秀な監督・コーチです。
 以下の大会データをもとに、チームの強み、課題、次戦に向けた具体的かつ前向きな戦術アドバイスを簡潔にまとめてください。
+
+【重要な前提定義】
+このチームでは「アタッカー」を、アタック試投数（内野AT試投数＋外野AT試投数の合計）が多い選手と定義します。選手個人データの「アタック試投数」を確認し、試投数が多い選手をアタッカー、少ない選手をアタッカー以外（ディフェンス中心の選手など）として扱った上で、役割ごとの傾向や課題を考察してください。試投数が少ない選手の低いAT率だけを見て一律に評価しないよう注意してください。
 
 【大会名】
 ${t.label}
