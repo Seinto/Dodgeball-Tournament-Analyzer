@@ -96,7 +96,7 @@ body {
   color: var(--text-primary);
   text-align: left;
 }
-/* バージョン情報固定表示（v1.6.1へインクリメント）[cite: 1] */
+/* バージョン情報固定表示（v1.6.2へインクリメント） */
 .version-badge {
   position: fixed;
   top: 8px;
@@ -655,8 +655,8 @@ body {
 <body>
 <div id="printTournamentTitle" style="display:none;"></div>
 
-<!-- バージョン情報を固定表示（v1.6.1へインクリメント） -->
-<div class="version-badge">v1.6.1</div>
+<!-- バージョン情報を固定表示（v1.6.2へインクリメント） -->
+<div class="version-badge">v1.6.2</div>
 
 <div class="app-header">
   <div class="header-top">
@@ -713,7 +713,7 @@ body {
         <button class="info-btn" onclick="openGasHelpModal()" title="GAS連携の手順を表示">ℹ</button>
       </div>
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.4;">
-        Apps Script の Web App URL を登録すると、各試合データがシート別にGoogleスプレッドシートに保存されます。
+        Apps Script の Web App URL を登録すると、登録済みの全大会・全試合データが試合別のシートとしてGoogleスプレッドシートに保存されます（既存データは変更箇所のみ更新されます）。
       </p>
       <label style="font-size:11px; font-weight:bold; color:var(--text-secondary);">Web App URL</label>
       <input type="url" id="gasUrlInput" class="input-title-field" placeholder="https://script.google.com/macros/s/.../exec" style="margin-top:4px; margin-bottom:8px;">
@@ -772,49 +772,130 @@ body {
       <pre class="code-block" id="gasCodeBlock">
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error("送信されたデータが空です。");
+    }
+
     var contents = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var matches = contents.matches || [];
-    var players = contents.players || [];
-    var tournamentLabel = contents.label || "試合データ";
 
-    matches.forEach(function(m, idx) {
-      var sheetName = "vs " + (m.opp || ("試合" + (idx + 1)));
-      sheetName = sheetName.substring(0, 30); // シート名文字数制限回避
-      
-      var sheet = ss.getSheetByName(sheetName);
-      if (!sheet) {
-        sheet = ss.insertSheet(sheetName);
-      } else {
-        sheet.clear();
-      }
+    // 新形式（全大会分をまとめたtournaments配列）と、
+    // 旧形式（単一大会のlabel/matches/players）の両方に対応
+    var tournaments = contents.tournaments;
+    if (!tournaments) {
+      tournaments = [{
+        index: 1,
+        label: contents.label || "試合データ",
+        matches: contents.matches || [],
+        players: contents.players || []
+      }];
+    }
 
-      sheet.appendRow(["大会名", tournamentLabel]);
-      sheet.appendRow(["対戦相手", m.opp, "結果", m.result, "スコア", m.us + " - " + m.them, "キープ時間", m.keep]);
-      if (m.notes) sheet.appendRow(["備考", m.notes]);
-      sheet.appendRow([]);
+    tournaments.forEach(function(tour, tPos) {
+      var tIdx = tour.index || (tPos + 1);
+      var tournamentLabel = tour.label || "試合データ";
+      var matches = tour.matches || [];
+      var players = tour.players || [];
 
-      sheet.appendRow(["選手名", "DF成功", "DF失敗", "内野AT成功", "内野AT失敗", "外野AT成功", "外野AT失敗"]);
-
-      players.forEach(function(p) {
-        var stat = (p.stats && p.stats[idx]) ? p.stats[idx] : null;
-        if (stat) {
-          sheet.appendRow([
-            p.name,
-            stat.def[0], stat.def[1],
-            stat.ia[0],  stat.ia[1],
-            stat.oa[0],  stat.oa[1]
-          ]);
-        }
+      matches.forEach(function(m, idx) {
+        upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players);
       });
     });
 
     return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
       .setMimeType(ContentService.MimeType.JSON);
+
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// 1試合分のシートを作成・特定し、内容が変わった箇所だけを更新する
+function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
+  var oppName = m.opp || ("対戦相手" + (idx + 1));
+  // 大会番号＋試合番号を付与し、大会間・試合間でのシート名重複（上書き事故）を防止
+  var sheetName = ("T" + tIdx + "-第" + (idx + 1) + "試合_vs" + oppName).substring(0, 30);
+
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+
+  // ---- ヘッダー部分（1〜5行目）。内容が変わった行だけ書き換える ----
+  var headerRows = [
+    ["大会名", tournamentLabel, "", "", "", "", "", ""],
+    ["対戦相手", oppName, "結果", m.result || "-", "スコア", (m.us || 0) + " - " + (m.them || 0), "キープ時間", m.keep || "-"],
+    ["備考", m.notes || "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["選手名", "DF成功", "DF失敗", "内野AT成功", "内野AT失敗", "外野AT成功", "外野AT失敗", ""]
+  ];
+  writeIfChanged(sheet, 1, 1, headerRows);
+
+  // ---- 選手成績部分（6行目以降）。選手名で既存行を特定し、差分のみ更新 ----
+  var PLAYER_START_ROW = 6;
+  var lastRow = sheet.getLastRow();
+  var existingRows = (lastRow >= PLAYER_START_ROW)
+    ? sheet.getRange(PLAYER_START_ROW, 1, lastRow - PLAYER_START_ROW + 1, 7).getValues()
+    : [];
+
+  var rowByName = {};
+  existingRows.forEach(function(r, i) {
+    if (r[0]) rowByName[r[0]] = PLAYER_START_ROW + i;
+  });
+
+  var usedNames = {};
+  var nextNewRow = PLAYER_START_ROW + existingRows.length;
+
+  players.forEach(function(p) {
+    var stat = (p.stats && p.stats[idx]) ? p.stats[idx] : null;
+    if (!stat) return;
+
+    var def = stat.def || [0, 0];
+    var ia = stat.ia || [0, 0];
+    var oa = stat.oa || [0, 0];
+    var rowValues = [p.name, def[0] || 0, def[1] || 0, ia[0] || 0, ia[1] || 0, oa[0] || 0, oa[1] || 0];
+
+    usedNames[p.name] = true;
+    var targetRow = rowByName[p.name];
+    if (targetRow) {
+      writeIfChanged(sheet, targetRow, 1, [rowValues]);
+    } else {
+      sheet.getRange(nextNewRow, 1, 1, 7).setValues([rowValues]);
+      nextNewRow++;
+    }
+  });
+
+  // 今回の同期データに含まれなくなった選手行は内容のみクリア（行削除はしない）
+  Object.keys(rowByName).forEach(function(name) {
+    if (!usedNames[name]) {
+      sheet.getRange(rowByName[name], 1, 1, 7).clearContent();
+    }
+  });
+}
+
+// 指定範囲の現在値と比較し、差分がある場合のみ書き込む（無駄な上書きを避ける）
+function writeIfChanged(sheet, row, col, values2D) {
+  var numRows = values2D.length;
+  var numCols = values2D[0].length;
+  var range = sheet.getRange(row, col, numRows, numCols);
+  var current = range.getValues();
+
+  var changed = false;
+  for (var r = 0; r < numRows && !changed; r++) {
+    for (var c = 0; c < numCols; c++) {
+      var curVal = (current[r][c] === null || current[r][c] === undefined) ? "" : current[r][c];
+      var newVal = (values2D[r][c] === null || values2D[r][c] === undefined) ? "" : values2D[r][c];
+      if (String(curVal) !== String(newVal)) { changed = true; break; }
+    }
+  }
+
+  if (changed) range.setValues(values2D);
+}
+
+// 接続確認用（ブラウザでURLを直接開いたときの確認用）
+function doGet(e) {
+  return ContentService.createTextOutput("GameTrac GAS Endpoint is Active.");
 }
 </pre>
     </div>
@@ -913,7 +994,8 @@ function updateGasStatus(msg, isSuccess = true) {
   }
 }
 
-// Googleスプレッドシートへの同期処理（試合ごとにシートを分けて出力）
+// Googleスプレッドシートへの同期処理（登録済み全大会・全試合データを、試合ごとにシートを分けて出力）
+// すでに保存済みのデータについては、GAS側で内容が変わった箇所のみ更新される
 async function syncToSpreadsheet() {
   const url = getGasUrl();
   if (!url) {
@@ -922,16 +1004,22 @@ async function syncToSpreadsheet() {
     return;
   }
 
-  const currentTournament = DATA[activeTournamentKey];
-  if (!currentTournament) return;
+  const tournamentKeys = Object.keys(DATA);
+  if (tournamentKeys.length === 0) return;
 
   updateGasStatus("同期中...", true);
 
   try {
     const payload = {
-      label: currentTournament.label,
-      matches: currentTournament.matches,
-      players: currentTournament.players
+      tournaments: tournamentKeys.map((key, tIdx) => {
+        const t = DATA[key];
+        return {
+          index: tIdx + 1,
+          label: t.label,
+          matches: t.matches,
+          players: t.players
+        };
+      })
     };
 
     const response = await fetch(url, {
@@ -942,7 +1030,7 @@ async function syncToSpreadsheet() {
 
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     updateGasStatus(`スプレッドシートと同期済み ${nowStr}`, true);
-    alert("スプレッドシートへのデータ保存（同期）が完了しました！");
+    alert("すべての大会データのスプレッドシートへの保存（同期）が完了しました！");
   } catch (e) {
     console.error("Spreadsheet Sync Error:", e);
     updateGasStatus("同期失敗（URLまたはネットワークを確認してください）", false);
