@@ -96,18 +96,20 @@ body {
   color: var(--text-primary);
   text-align: left;
 }
+/* バージョン情報固定表示（スワイプ・スクロールしても常に固定） */
 .version-badge {
   position: fixed;
-  top: 6px;
+  top: 8px;
   right: 8px;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 2px 8px;
-  z-index: 1000;
-  opacity: 0.85;
+  border: 1px solid var(--border-md);
+  border-radius: 12px;
+  padding: 3px 10px;
+  z-index: 2000;
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 .btn-api-settings {
@@ -520,7 +522,7 @@ body {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.5);
-  z-index: 1000;
+  z-index: 3000;
   justify-content: center;
   align-items: center;
   padding: 16px;
@@ -531,7 +533,7 @@ body {
   border-radius: var(--radius-lg);
   padding: 20px;
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   box-shadow: var(--shadow-md);
   max-height: 90vh;
   overflow-y: auto;
@@ -547,10 +549,10 @@ body {
 .info-btn {
   background: var(--bg-info);
   color: var(--text-info);
-  border: none;
+  border: 1px solid var(--blue-light);
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;
@@ -558,6 +560,43 @@ body {
   align-items: center;
   justify-content: center;
   margin-left: 6px;
+}
+.setting-card {
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+  background: var(--bg-secondary);
+}
+.setting-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+}
+.sync-status {
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bg-info);
+  color: var(--text-info);
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.code-block {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 11px;
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 220px;
+  margin: 10px 0;
 }
 .ai-output-box {
   background: var(--bg-secondary);
@@ -577,7 +616,7 @@ body {
 @media print {
   body { background: #ffffff !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; padding: 0 !important; }
   .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  .app-header, .input-toggle, .btn-share-toggle, .btn-pdf, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab, .btn-ai-generate { display: none !important; }
+  .app-header, .input-toggle, .btn-share-toggle, .btn-pdf, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab, .btn-ai-generate, .version-badge { display: none !important; }
   .section { display: none !important; }
   .section.active { display: block !important; }
   .sub-section { display: block !important; opacity: 1 !important; visibility: visible !important; margin-bottom: 40px !important; page-break-inside: auto !important; break-inside: auto !important; }
@@ -608,12 +647,13 @@ body {
 <body>
 <div id="printTournamentTitle" style="display:none;"></div>
 
-<div class="version-badge">v1.5.0</div>
+<!-- バージョン情報を固定表示（v1.6.0へインクリメント） -->
+<div class="version-badge">v1.6.0</div>
 
 <div class="app-header">
   <div class="header-top">
     <h1>DodgeBall GameTrac</h1>
-    <button class="btn-api-settings" onclick="openApiModal()">⚙ API設定</button>
+    <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
   <div class="header-actions">
     <button class="btn-pdf" id="pdfBtn" onclick="triggerSmartPrint()">📄 PDF出力</button>
@@ -649,31 +689,136 @@ body {
   <div id="tContent"></div>
 </div>
 
-<!-- API Key 設定モーダル -->
-<div class="modal-overlay" id="apiModal">
+<!-- 設定モーダル (スプレッドシート連携 + Gemini API設定) -->
+<div class="modal-overlay" id="settingsModal">
   <div class="modal-content">
     <div class="modal-header">
-      <div style="display:flex; align-items:center;">
-        <span class="modal-title">Gemini API Key 設定</span>
-        <button class="info-btn" onclick="openHelpModal()" title="取得方法を見る">i</button>
-      </div>
-      <button class="btn-close" onclick="closeApiModal()">&times;</button>
+      <span class="modal-title">⚙ 設定</span>
+      <button class="btn-close" onclick="closeSettingsModal()">&times;</button>
     </div>
-    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height:1.4;">
-      Geminiによる高度な自動考察機能を利用するには、個人のGemini APIキーが必要です。<br>
-      ※入力されたAPIキーはお使いのブラウザ内（Local Storage）にのみ安全に保存されます。
-    </p>
-    <input type="password" id="apiKeyInput" class="input-title-field" placeholder="AIzaSy..." style="margin-bottom:12px;">
-    <button class="btn-submit" onclick="saveApiKey()">保存する</button>
+
+    <!-- Googleスプレッドシート連携設定 -->
+    <div class="setting-card">
+      <div class="setting-card-title">
+        Googleスプレッドシート連携
+        <button class="info-btn" onclick="openGasHelpModal()" title="GAS連携の手順を表示">ℹ</button>
+      </div>
+      <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.4;">
+        Apps Script の Web App URL を登録すると、各試合データがシート別にGoogleスプレッドシートに保存されます。
+      </p>
+      <label style="font-size:11px; font-weight:bold; color:var(--text-secondary);">Web App URL</label>
+      <input type="url" id="gasUrlInput" class="input-title-field" placeholder="https://script.google.com/macros/s/.../exec" style="margin-top:4px; margin-bottom:8px;">
+      
+      <div style="display:flex; gap:8px;">
+        <button class="btn-action-blue" style="margin-top:0; flex:2;" onclick="saveGasUrl()">URLを保存</button>
+        <button class="btn-submit" style="margin-top:0; flex:1; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-md);" onclick="syncToSpreadsheetManual()">今すぐ同期</button>
+      </div>
+
+      <p style="font-size:11px; color:var(--text-secondary); margin-top:6px;">
+        連携手順およびGASコードは右上の（ℹ）ボタンをクリックして確認できます
+      </p>
+
+      <div class="sync-status" id="gasSyncStatus">
+        <span id="gasSyncIcon">🟢</span> <span id="gasSyncText">未同期または未設定</span>
+      </div>
+    </div>
+
+    <!-- Gemini API Key 設定 -->
+    <div class="setting-card">
+      <div class="setting-card-title">
+        Gemini API Key 設定
+        <button class="info-btn" onclick="openGeminiHelpModal()" title="取得方法を見る">ℹ</button>
+      </div>
+      <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.4;">
+        Geminiによる高度な自動考察機能を利用するためのAPIキーです。入力キーはブラウザ内（LocalStorage）に保存されます。
+      </p>
+      <input type="password" id="apiKeyInput" class="input-title-field" placeholder="AIzaSy..." style="margin-bottom:8px;">
+      <button class="btn-action-blue" style="margin-top:0;" onclick="saveApiKey()">キーを保存</button>
+    </div>
   </div>
 </div>
 
-<!-- API Key 取得方法ガイドモーダル -->
-<div class="modal-overlay" id="helpModal">
+<!-- GAS連携手順 & コードモーダル (添付画像イメージ) -->
+<div class="modal-overlay" id="gasHelpModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title">Googleスプレッドシート連携の手順 &amp; GASコード</span>
+      <button class="btn-close" onclick="closeGasHelpModal()">&times;</button>
+    </div>
+    <div style="font-size:12px; color:var(--text-primary); line-height:1.6;">
+      <ol style="padding-left:18px; margin-bottom:12px;">
+        <li style="margin-bottom:4px;">Googleドライブで新しい「Googleスプレッドシート」を作成します。</li>
+        <li style="margin-bottom:4px;">メニューの <strong>[拡張機能] &gt; [Apps Script]</strong> を開きます。</li>
+        <li style="margin-bottom:4px;">表示されたエディタの内容を全て消去し、以下のGASコードを貼り付けて保存します。</li>
+        <li style="margin-bottom:4px;">右上の <strong>[デプロイ] &gt; [新しいデプロイ]</strong> を選択します。</li>
+        <li style="margin-bottom:4px;">種類で「ウェブアプリ」を選択し、アクセスできるユーザーを「全員」に設定してデプロイします。</li>
+        <li style="margin-bottom:4px;">発行された Web App URL を本アプリの設定画面に入力してください。</li>
+      </ol>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <strong style="font-size:12px;">GASコード（最新版）</strong>
+        <button class="btn-api-settings" onclick="copyGasCode()">コードをコピー</button>
+      </div>
+      
+      <pre class="code-block" id="gasCodeBlock">
+function doPost(e) {
+  try {
+    var contents = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var matches = contents.matches || [];
+    var players = contents.players || [];
+    var tournamentLabel = contents.label || "試合データ";
+
+    matches.forEach(function(m, idx) {
+      var sheetName = "vs " + (m.opp || ("試合" + (idx + 1)));
+      sheetName = sheetName.substring(0, 30); // シート名文字数制限回避
+      
+      var sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+      } else {
+        sheet.clear();
+      }
+
+      sheet.appendRow(["大会名", tournamentLabel]);
+      sheet.appendRow(["対戦相手", m.opp, "結果", m.result, "スコア", m.us + " - " + m.them, "キープ時間", m.keep]);
+      if (m.notes) sheet.appendRow(["備考", m.notes]);
+      sheet.appendRow([]);
+
+      sheet.appendRow(["選手名", "DF成功", "DF失敗", "内野AT成功", "内野AT失敗", "外野AT成功", "外野AT失敗"]);
+
+      players.forEach(function(p) {
+        var stat = (p.stats && p.stats[idx]) ? p.stats[idx] : null;
+        if (stat) {
+          sheet.appendRow([
+            p.name,
+            stat.def[0], stat.def[1],
+            stat.ia[0],  stat.ia[1],
+            stat.oa[0],  stat.oa[1]
+          ]);
+        }
+      });
+    });
+
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+</pre>
+    </div>
+    <button class="btn-action-blue" style="margin-top:10px;" onclick="closeGasHelpModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- Gemini API Key 取得方法ガイドモーダル -->
+<div class="modal-overlay" id="geminiHelpModal">
   <div class="modal-content">
     <div class="modal-header">
       <span class="modal-title">Gemini APIキーの取得方法</span>
-      <button class="btn-close" onclick="closeHelpModal()">&times;</button>
+      <button class="btn-close" onclick="closeGeminiHelpModal()">&times;</button>
     </div>
     <div style="font-size:13px; color:var(--text-primary); line-height:1.6;">
       <ol style="padding-left:20px; margin-bottom:12px;">
@@ -682,11 +827,11 @@ body {
         </li>
         <li style="margin-bottom:8px;"><strong>Googleアカウントでログイン</strong><br>お持ちのGoogleアカウントでサインインします。</li>
         <li style="margin-bottom:8px;"><strong>APIキーを作成</strong><br>「Create API key」ボタンを押します。</li>
-        <li style="margin-bottom:8px;"><strong>キーをコピー＆ペースト</strong><br>発行された文字列（`AIzaSy...`）をコピーし、本アプリの入力欄へ貼り付けて保存してください。</li>
+        <li style="margin-bottom:8px;"><strong>キーをコピー＆ペースト</strong><br>発行された文字列（`AIzaSy...`）をコピーし、設定画面の入力欄へ貼り付けて保存してください。</li>
       </ol>
       <p style="font-size:11px; color:var(--text-secondary);">※基本的な利用枠であれば無料で作成できます。</p>
     </div>
-    <button class="btn-action-blue" style="margin-top:16px;" onclick="closeHelpModal()">閉じる</button>
+    <button class="btn-action-blue" style="margin-top:16px;" onclick="closeGeminiHelpModal()">閉じる</button>
   </div>
 </div>
 
@@ -726,21 +871,98 @@ function getApiKey() {
 function saveApiKey() {
   const key = document.getElementById("apiKeyInput").value.trim();
   if(!key) {
-    alert("APIキーを入力してください。");
+    alert("Gemini APIキーを入力してください。");
     return;
   }
   localStorage.setItem("GEMINI_API_KEY", key);
-  alert("APIキーを保存しました。");
-  closeApiModal();
+  alert("Gemini APIキーを保存しました。");
 }
 
-function openApiModal() {
-  document.getElementById("apiKeyInput").value = getApiKey();
-  document.getElementById("apiModal").classList.add("open");
+function getGasUrl() {
+  return localStorage.getItem("GAS_WEB_APP_URL") || "";
 }
-function closeApiModal() { document.getElementById("apiModal").classList.remove("open"); }
-function openHelpModal() { document.getElementById("helpModal").classList.add("open"); }
-function closeHelpModal() { document.getElementById("helpModal").classList.remove("open"); }
+
+function saveGasUrl() {
+  const url = document.getElementById("gasUrlInput").value.trim();
+  localStorage.setItem("GAS_WEB_APP_URL", url);
+  if(url) {
+    alert("GAS Web App URLを保存しました。");
+    syncToSpreadsheet();
+  } else {
+    alert("URL設定を解除しました。");
+    updateGasStatus("未設定", false);
+  }
+}
+
+function updateGasStatus(msg, isSuccess = true) {
+  const statusEl = document.getElementById("gasSyncStatus");
+  const iconEl = document.getElementById("gasSyncIcon");
+  const textEl = document.getElementById("gasSyncText");
+  if(statusEl && iconEl && textEl) {
+    iconEl.textContent = isSuccess ? "🟢" : "🔴";
+    textEl.textContent = msg;
+  }
+}
+
+// Googleスプレッドシートへの同期処理（試合ごとにシートを分けて出力）
+async function syncToSpreadsheet() {
+  const url = getGasUrl();
+  if (!url) return;
+
+  const currentTournament = DATA[activeTournamentKey];
+  if (!currentTournament) return;
+
+  updateGasStatus("同期中...", true);
+
+  try {
+    const payload = {
+      label: currentTournament.label,
+      matches: currentTournament.matches,
+      players: currentTournament.players
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    updateGasStatus(`スプレッドシートと同期済み ${nowStr}`, true);
+  } catch (e) {
+    console.error("Spreadsheet Sync Error:", e);
+    updateGasStatus("同期失敗（URLまたはネットワークを確認してください）", false);
+  }
+}
+
+function syncToSpreadsheetManual() {
+  const url = getGasUrl();
+  if(!url) {
+    alert("先にWeb App URLを入力・保存してください。");
+    return;
+  }
+  syncToSpreadsheet();
+}
+
+function openSettingsModal() {
+  document.getElementById("apiKeyInput").value = getApiKey();
+  document.getElementById("gasUrlInput").value = getGasUrl();
+  document.getElementById("settingsModal").classList.add("open");
+}
+function closeSettingsModal() { document.getElementById("settingsModal").classList.remove("open"); }
+function openGasHelpModal() { document.getElementById("gasHelpModal").classList.add("open"); }
+function closeGasHelpModal() { document.getElementById("gasHelpModal").classList.remove("open"); }
+function openGeminiHelpModal() { document.getElementById("geminiHelpModal").classList.add("open"); }
+function closeGeminiHelpModal() { document.getElementById("geminiHelpModal").classList.remove("open"); }
+
+function copyGasCode() {
+  const code = document.getElementById("gasCodeBlock").innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    alert("GASコードをクリップボードにコピーしました！");
+  }).catch(() => {
+    alert("コピーに失敗しました。直接手動でテキストを選択してください。");
+  });
+}
 
 function loadFromStorage() {
   const stored = localStorage.getItem("GANBA_DASHBOARD_DATA");
@@ -756,6 +978,7 @@ function loadFromStorage() {
 
 function saveToStorage() {
   localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
+  syncToSpreadsheet();
 }
 
 function dc(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
@@ -1168,12 +1391,12 @@ function buildInsightHTML(t, tKey){
   return h;
 }
 
-// Gemini API を呼び出して戦術考察を取得（エラー詳細表示付き修正版）
+// Gemini API を呼び出して戦術考察を取得
 async function generateGeminiInsight(tKey) {
   const apiKey = getApiKey();
   if (!apiKey) {
-    alert("Gemini APIキーが設定されていません。画面右上の「⚙ API設定」からキーを入力してください。");
-    openApiModal();
+    alert("Gemini APIキーが設定されていません。画面右上の「⚙ 設定」からキーを入力してください。");
+    openSettingsModal();
     return;
   }
 
@@ -1184,7 +1407,6 @@ async function generateGeminiInsight(tKey) {
   if (!t) return;
   const rows = calcAll(t.players, "all");
   
-  // プロンプトデータの準備
   const matchSummary = t.matches.map(m => `・vs ${m.opp}: ${m.result} (${m.us}-${m.them}), キープ:${m.keep}`).join('\n');
   const playerSummary = rows.map(r => `・${r.name}: アタック試投数=${r.ta}, DF率=${r.dr !== null ? r.dr + '%' : 'データなし'}, 内野AT率=${r.ir !== null ? r.ir + '%' : 'データなし'}, 外野AT率=${r.or !== null ? r.or + '%' : 'データなし'}`).join('\n');
 
@@ -1209,23 +1431,13 @@ ${playerSummary}
 - 改善すべき課題
 - 具体的アドバイス・次へのアクション`;
 
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: promptText }
-            ]
-          }
-        ]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
     });
 
     const resData = await response.json();
@@ -1259,7 +1471,6 @@ const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini
     `;
   }
 }
-
 
 function formatMarkdown(text) {
   return text
@@ -1314,6 +1525,7 @@ function initDashboard() {
 window.addEventListener('load', function(){
   loadFromStorage(); initDashboard();
   if (activeTournamentKey && DATA[activeTournamentKey]) { buildAllCharts(activeTournamentKey); renderPTable(activeTournamentKey, 'all'); }
+  if (getGasUrl()) { updateGasStatus("URL設定済み", true); }
 });
 </script>
 </body>
