@@ -96,7 +96,7 @@ body {
   color: var(--text-primary);
   text-align: left;
 }
-/* バージョン情報固定表示（スワイプ・スクロールしても常に固定） */
+/* バージョン情報固定表示（v1.6.1へインクリメント）[cite: 1] */
 .version-badge {
   position: fixed;
   top: 8px;
@@ -124,8 +124,8 @@ body {
 }
 .header-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
   width: 100%;
 }
 .header-actions button {
@@ -133,8 +133,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 12px 8px;
-  font-size: 13px;
+  padding: 12px 6px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -148,6 +148,14 @@ body {
   box-shadow: 0 2px 8px rgba(55, 138, 221, 0.25);
 }
 .btn-pdf:active { background: #286fae; transform: scale(0.97); }
+
+.btn-sheet-sync {
+  background: var(--green);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(29, 158, 117, 0.25);
+}
+.btn-sheet-sync:active { background: var(--green-dark); transform: scale(0.97); }
 
 .btn-share-toggle {
   background: var(--bg-secondary);
@@ -616,7 +624,7 @@ body {
 @media print {
   body { background: #ffffff !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; padding: 0 !important; }
   .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  .app-header, .input-toggle, .btn-share-toggle, .btn-pdf, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab, .btn-ai-generate, .version-badge { display: none !important; }
+  .app-header, .input-toggle, .btn-share-toggle, .btn-pdf, .btn-sheet-sync, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab, .btn-ai-generate, .version-badge { display: none !important; }
   .section { display: none !important; }
   .section.active { display: block !important; }
   .sub-section { display: block !important; opacity: 1 !important; visibility: visible !important; margin-bottom: 40px !important; page-break-inside: auto !important; break-inside: auto !important; }
@@ -647,8 +655,8 @@ body {
 <body>
 <div id="printTournamentTitle" style="display:none;"></div>
 
-<!-- バージョン情報を固定表示（v1.6.0へインクリメント） -->
-<div class="version-badge">v1.6.0</div>
+<!-- バージョン情報を固定表示（v1.6.1へインクリメント） -->
+<div class="version-badge">v1.6.1</div>
 
 <div class="app-header">
   <div class="header-top">
@@ -657,6 +665,7 @@ body {
   </div>
   <div class="header-actions">
     <button class="btn-pdf" id="pdfBtn" onclick="triggerSmartPrint()">📄 PDF出力</button>
+    <button class="btn-sheet-sync" onclick="syncToSpreadsheetManual()">☁ シート保存</button>
     <button class="btn-share-toggle" onclick="toggleShareSection()">🔄 共有・同期</button>
     <button class="input-toggle" onclick="toggleInputArea()">＋ データ追加</button>
   </div>
@@ -738,7 +747,7 @@ body {
   </div>
 </div>
 
-<!-- GAS連携手順 & コードモーダル (添付画像イメージ) -->
+<!-- GAS連携手順 & コードモーダル -->
 <div class="modal-overlay" id="gasHelpModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -907,7 +916,11 @@ function updateGasStatus(msg, isSuccess = true) {
 // Googleスプレッドシートへの同期処理（試合ごとにシートを分けて出力）
 async function syncToSpreadsheet() {
   const url = getGasUrl();
-  if (!url) return;
+  if (!url) {
+    alert("GoogleスプレッドシートのWeb App URLが設定されていません。\n右上の「⚙ 設定」からURLを入力してください。");
+    openSettingsModal();
+    return;
+  }
 
   const currentTournament = DATA[activeTournamentKey];
   if (!currentTournament) return;
@@ -929,9 +942,11 @@ async function syncToSpreadsheet() {
 
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     updateGasStatus(`スプレッドシートと同期済み ${nowStr}`, true);
+    alert("スプレッドシートへのデータ保存（同期）が完了しました！");
   } catch (e) {
     console.error("Spreadsheet Sync Error:", e);
     updateGasStatus("同期失敗（URLまたはネットワークを確認してください）", false);
+    alert("同期に失敗しました。コンソールまたはURLを確認してください。");
   }
 }
 
@@ -939,6 +954,7 @@ function syncToSpreadsheetManual() {
   const url = getGasUrl();
   if(!url) {
     alert("先にWeb App URLを入力・保存してください。");
+    openSettingsModal();
     return;
   }
   syncToSpreadsheet();
@@ -978,7 +994,11 @@ function loadFromStorage() {
 
 function saveToStorage() {
   localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
-  syncToSpreadsheet();
+  // データ保存時に自動同期
+  const url = getGasUrl();
+  if (url) {
+    syncToSpreadsheet();
+  }
 }
 
 function dc(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
