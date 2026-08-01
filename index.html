@@ -78,10 +78,10 @@ body {
 .app-header {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border);
-  padding: 20px 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   box-shadow: var(--shadow-sm);
 }
 .header-top {
@@ -89,28 +89,28 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+.title-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .app-header h1 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text-primary);
   text-align: left;
 }
-/* バージョン情報固定表示（v1.6.2へインクリメント） */
+/* バージョン情報（他の要素と被らないようインライン配置） */
 .version-badge {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--text-secondary);
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-md);
-  border-radius: 12px;
-  padding: 3px 10px;
-  z-index: 2000;
-  box-shadow: var(--shadow-sm);
-  pointer-events: none;
+  border-radius: 10px;
+  padding: 2px 6px;
+  display: inline-block;
 }
 .btn-api-settings {
   background: var(--bg-secondary);
@@ -124,8 +124,8 @@ body {
 }
 .header-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   width: 100%;
 }
 .header-actions button {
@@ -133,7 +133,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 12px 6px;
+  padding: 10px 6px;
   font-size: 12px;
   font-weight: 600;
   border-radius: var(--radius-md);
@@ -148,14 +148,6 @@ body {
   box-shadow: 0 2px 8px rgba(55, 138, 221, 0.25);
 }
 .btn-pdf:active { background: #286fae; transform: scale(0.97); }
-
-.btn-sheet-sync {
-  background: var(--green);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 2px 8px rgba(29, 158, 117, 0.25);
-}
-.btn-sheet-sync:active { background: var(--green-dark); transform: scale(0.97); }
 
 .btn-share-toggle {
   background: var(--bg-secondary);
@@ -246,7 +238,7 @@ body {
   color: #fff;
   border: none;
   padding: 12px 20px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -256,6 +248,20 @@ body {
   transition: opacity 0.2s;
 }
 .btn-ai-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-player-ai {
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 
 .share-box-layout {
   display: flex;
@@ -304,9 +310,13 @@ body {
   border-color: var(--blue);
   box-shadow: 0 2px 6px rgba(55, 138, 221, 0.2);
 }
+.tab-wrapper.all-summary-tab.active {
+  background: var(--purple);
+  border-color: var(--purple);
+}
 .tournament-tab {
-  min-width: 110px;
-  padding: 10px 4px 10px 14px;
+  min-width: 90px;
+  padding: 10px 6px 10px 12px;
   font-size: 13px;
   font-weight: 600;
   border: none;
@@ -324,7 +334,7 @@ body {
   color: var(--text-secondary);
   font-size: 18px;
   cursor: pointer;
-  padding: 10px 12px 10px 4px;
+  padding: 10px 10px 10px 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -391,7 +401,7 @@ body {
   margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
 }
-.card-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; position: relative; padding-left: 8px; }
+.card-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; position: relative; padding-left: 8px; display: flex; justify-content: space-between; align-items: center; }
 .card-title::before { content:''; position:absolute; left:0; top:2px; bottom:2px; width:3px; background:var(--blue); border-radius:2px; }
 
 .match-grid {
@@ -617,6 +627,19 @@ body {
   margin-top: 12px;
 }
 
+.player-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.player-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
 .print-image-fallback { display: none; width: 100%; height: auto; }
 .print-only-match-tables { display: none; }
 
@@ -624,7 +647,7 @@ body {
 @media print {
   body { background: #ffffff !important; color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; padding: 0 !important; }
   .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  .app-header, .input-toggle, .btn-share-toggle, .btn-pdf, .btn-sheet-sync, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab, .btn-ai-generate, .version-badge { display: none !important; }
+  .app-header, .input-toggle, .btn-share-toggle, .btn-pdf, .input-section, .tournament-tabs, .sub-nav, .filter-row, .btn-delete-tab, .btn-ai-generate, .btn-player-ai, .version-badge { display: none !important; }
   .section { display: none !important; }
   .section.active { display: block !important; }
   .sub-section { display: block !important; opacity: 1 !important; visibility: visible !important; margin-bottom: 40px !important; page-break-inside: auto !important; break-inside: auto !important; }
@@ -655,17 +678,17 @@ body {
 <body>
 <div id="printTournamentTitle" style="display:none;"></div>
 
-<!-- バージョン情報を固定表示（v1.6.2へインクリメント） -->
-<div class="version-badge">v1.6.2</div>
-
 <div class="app-header">
   <div class="header-top">
-    <h1>DodgeBall GameTrac</h1>
+    <div class="title-area">
+      <h1>DodgeBall GameTrac</h1>
+      <!-- バージョン情報を被らないインライン配置で表示（v2.0.0） -->
+      <span class="version-badge">v2.0.0</span>
+    </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
   <div class="header-actions">
     <button class="btn-pdf" id="pdfBtn" onclick="triggerSmartPrint()">📄 PDF出力</button>
-    <button class="btn-sheet-sync" onclick="syncToSpreadsheetManual()">☁ シート保存</button>
     <button class="btn-share-toggle" onclick="toggleShareSection()">🔄 共有・同期</button>
     <button class="input-toggle" onclick="toggleInputArea()">＋ データ追加</button>
   </div>
@@ -698,7 +721,7 @@ body {
   <div id="tContent"></div>
 </div>
 
-<!-- 設定モーダル (スプレッドシート連携 + Gemini API設定) -->
+<!-- 設定モーダル (スプレッドシート連携 + Gemini API設定 + シート保存ボタン移設) -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -706,26 +729,22 @@ body {
       <button class="btn-close" onclick="closeSettingsModal()">&times;</button>
     </div>
 
-    <!-- Googleスプレッドシート連携設定 -->
+    <!-- Googleスプレッドシート連携設定（シート保存ボタンをここに設置） -->
     <div class="setting-card">
       <div class="setting-card-title">
         Googleスプレッドシート連携
         <button class="info-btn" onclick="openGasHelpModal()" title="GAS連携の手順を表示">ℹ</button>
       </div>
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.4;">
-        Apps Script の Web App URL を登録すると、登録済みの全大会・全試合データが試合別のシートとしてGoogleスプレッドシートに保存されます（既存データは変更箇所のみ更新されます）。
+        Apps Script の Web App URL を登録すると、登録済みの全大会・全試合データが試合別のシートとしてGoogleスプレッドシートに保存されます。
       </p>
       <label style="font-size:11px; font-weight:bold; color:var(--text-secondary);">Web App URL</label>
       <input type="url" id="gasUrlInput" class="input-title-field" placeholder="https://script.google.com/macros/s/.../exec" style="margin-top:4px; margin-bottom:8px;">
       
       <div style="display:flex; gap:8px;">
-        <button class="btn-action-blue" style="margin-top:0; flex:2;" onclick="saveGasUrl()">URLを保存</button>
-        <button class="btn-submit" style="margin-top:0; flex:1; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-md);" onclick="syncToSpreadsheetManual()">今すぐ同期</button>
+        <button class="btn-action-blue" style="margin-top:0; flex:1;" onclick="saveGasUrl()">URLを保存</button>
+        <button class="btn-submit" style="margin-top:0; flex:1; background:var(--green); color:#fff;" onclick="syncToSpreadsheetManual()">☁ シートに保存（同期）</button>
       </div>
-
-      <p style="font-size:11px; color:var(--text-secondary); margin-top:6px;">
-        連携手順およびGASコードは右上の（ℹ）ボタンをクリックして確認できます
-      </p>
 
       <div class="sync-status" id="gasSyncStatus">
         <span id="gasSyncIcon">🟢</span> <span id="gasSyncText">未同期または未設定</span>
@@ -739,7 +758,7 @@ body {
         <button class="info-btn" onclick="openGeminiHelpModal()" title="取得方法を見る">ℹ</button>
       </div>
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.4;">
-        Geminiによる高度な自動考察機能を利用するためのAPIキーです。入力キーはブラウザ内（LocalStorage）に保存されます。
+        Geminiによる高度な自動考察機能および選手別考察機能を利用するためのAPIキーです。
       </p>
       <input type="password" id="apiKeyInput" class="input-title-field" placeholder="AIzaSy..." style="margin-bottom:8px;">
       <button class="btn-action-blue" style="margin-top:0;" onclick="saveApiKey()">キーを保存</button>
@@ -779,8 +798,6 @@ function doPost(e) {
     var contents = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-    // 新形式（全大会分をまとめたtournaments配列）と、
-    // 旧形式（単一大会のlabel/matches/players）の両方に対応
     var tournaments = contents.tournaments;
     if (!tournaments) {
       tournaments = [{
@@ -811,10 +828,8 @@ function doPost(e) {
   }
 }
 
-// 1試合分のシートを作成・特定し、内容が変わった箇所だけを更新する
 function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
   var oppName = m.opp || ("対戦相手" + (idx + 1));
-  // 大会番号＋試合番号を付与し、大会間・試合間でのシート名重複（上書き事故）を防止
   var sheetName = ("T" + tIdx + "-第" + (idx + 1) + "試合_vs" + oppName).substring(0, 30);
 
   var sheet = ss.getSheetByName(sheetName);
@@ -822,7 +837,6 @@ function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
     sheet = ss.insertSheet(sheetName);
   }
 
-  // ---- ヘッダー部分（1〜5行目）。内容が変わった行だけ書き換える ----
   var headerRows = [
     ["大会名", tournamentLabel, "", "", "", "", "", ""],
     ["対戦相手", oppName, "結果", m.result || "-", "スコア", (m.us || 0) + " - " + (m.them || 0), "キープ時間", m.keep || "-"],
@@ -832,7 +846,6 @@ function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
   ];
   writeIfChanged(sheet, 1, 1, headerRows);
 
-  // ---- 選手成績部分（6行目以降）。選手名で既存行を特定し、差分のみ更新 ----
   var PLAYER_START_ROW = 6;
   var lastRow = sheet.getLastRow();
   var existingRows = (lastRow >= PLAYER_START_ROW)
@@ -866,7 +879,6 @@ function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
     }
   });
 
-  // 今回の同期データに含まれなくなった選手行は内容のみクリア（行削除はしない）
   Object.keys(rowByName).forEach(function(name) {
     if (!usedNames[name]) {
       sheet.getRange(rowByName[name], 1, 1, 7).clearContent();
@@ -874,7 +886,6 @@ function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
   });
 }
 
-// 指定範囲の現在値と比較し、差分がある場合のみ書き込む（無駄な上書きを避ける）
 function writeIfChanged(sheet, row, col, values2D) {
   var numRows = values2D.length;
   var numCols = values2D[0].length;
@@ -893,7 +904,6 @@ function writeIfChanged(sheet, row, col, values2D) {
   if (changed) range.setValues(values2D);
 }
 
-// 接続確認用（ブラウザでURLを直接開いたときの確認用）
 function doGet(e) {
   return ContentService.createTextOutput("GameTrac GAS Endpoint is Active.");
 }
@@ -994,12 +1004,10 @@ function updateGasStatus(msg, isSuccess = true) {
   }
 }
 
-// Googleスプレッドシートへの同期処理（登録済み全大会・全試合データを、試合ごとにシートを分けて出力）
-// すでに保存済みのデータについては、GAS側で内容が変わった箇所のみ更新される
 async function syncToSpreadsheet() {
   const url = getGasUrl();
   if (!url) {
-    alert("GoogleスプレッドシートのWeb App URLが設定されていません。\n右上の「⚙ 設定」からURLを入力してください。");
+    alert("GoogleスプレッドシートのWeb App URLが設定されていません。\n画面右上の「⚙ 設定」からURLを入力してください。");
     openSettingsModal();
     return;
   }
@@ -1077,12 +1085,11 @@ function loadFromStorage() {
     saveToStorage();
   }
   const keys = Object.keys(DATA);
-  activeTournamentKey = keys.length > 0 ? keys[0] : null;
+  activeTournamentKey = "ALL_SUMMARY"; // 初期表示を全大会通算にするか、データがあればそれにする
 }
 
 function saveToStorage() {
   localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
-  // データ保存時に自動同期
   const url = getGasUrl();
   if (url) {
     syncToSpreadsheet();
@@ -1134,14 +1141,9 @@ function importDataFromText() {
     if (typeof parsedData === 'object' && parsedData !== null) {
       DATA = parsedData;
       saveToStorage();
-      
-      const remainingKeys = Object.keys(DATA);
-      activeTournamentKey = remainingKeys.length > 0 ? remainingKeys[0] : null;
-      
+      activeTournamentKey = "ALL_SUMMARY";
       initDashboard();
-      if(activeTournamentKey) {
-        switchT(activeTournamentKey);
-      }
+      switchT("ALL_SUMMARY");
       document.getElementById('sharePasteArea').value = '';
       toggleShareSection();
       alert("データの同期・復元が完了しました！");
@@ -1154,69 +1156,511 @@ function importDataFromText() {
   }
 }
 
-function buildPrintOnlyMatchTablesHTML(tKey) {
-  const t = DATA[tKey];
-  if(!t || !t.matches) return '';
-  let h = '<div class="print-only-match-tables">';
-  t.matches.forEach((m, idx) => {
-    let resLabel = m.result;
-    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + resLabel + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
-    const rows = calcAll(t.players, idx);
-    h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
-    rows.forEach(r => {
-      const hasData = t.players.find(p => p.name === r.name);
-      if(!hasData || !hasData.stats[idx]) return;
-      h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
+// 全大会集約データの計算
+function calcAllTournamentsSummary() {
+  const pMap = {};
+  let totalMatches = 0;
+  let wins = 0, loses = 0, draws = 0;
+  let totalUs = 0, totalThem = 0;
+
+  Object.keys(DATA).forEach(tKey => {
+    const t = DATA[tKey];
+    if(!t) return;
+    totalMatches += (t.matches ? t.matches.length : 0);
+    if(t.matches) {
+      t.matches.forEach(m => {
+        if(m.result === '勝') wins++;
+        else if(m.result === '負') loses++;
+        else draws++;
+        totalUs += (m.us || 0);
+        totalThem += (m.them || 0);
+      });
+    }
+
+    if(t.players) {
+      t.players.forEach(p => {
+        if(!pMap[p.name]) {
+          pMap[p.name] = { name: p.name, dO:0, dX:0, iO:0, iX:0, oO:0, oX:0, matchCount: 0 };
+        }
+        if(p.stats) {
+          p.stats.forEach(s => {
+            if(s) {
+              pMap[p.name].matchCount++;
+              pMap[p.name].dO += (s.def ? s.def[0] : 0);
+              pMap[p.name].dX += (s.def ? s.def[1] : 0);
+              pMap[p.name].iO += (s.ia ? s.ia[0] : 0);
+              pMap[p.name].iX += (s.ia ? s.ia[1] : 0);
+              pMap[p.name].oO += (s.oa ? s.oa[0] : 0);
+              pMap[p.name].oX += (s.oa ? s.oa[1] : 0);
+            }
+          });
+        }
+      });
+    }
+  });
+
+  const playerRows = Object.values(pMap).map(p => {
+    const dr = (p.dO + p.dX) > 0 ? Math.round(p.dO / (p.dO + p.dX) * 100) : null;
+    const ir = (p.iO + p.iX) > 0 ? Math.round(p.iO / (p.iO + p.iX) * 100) : null;
+    const or = (p.oO + p.oX) > 0 ? Math.round(p.oO / (p.oO + p.oX) * 100) : null;
+    const ta = p.iO + p.iX + p.oO + p.oX;
+    const ar = ta > 0 ? Math.round((p.iO + p.oO) / ta * 100) : null;
+    return { ...p, dr, ir, or, ta, ar };
+  }).sort((a,b) => b.matchCount - a.matchCount);
+
+  return { totalMatches, wins, loses, draws, totalUs, totalThem, playerRows };
+}
+
+function calcAll(players, midx){
+  return players.map(p=>{
+    let dO=0,dX=0,iO=0,iX=0,oO=0,oX=0; const idxs = midx==="all"?[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]:[parseInt(midx)];
+    idxs.forEach(i=>{ if(p.stats && p.stats[i]) { const s=p.stats[i]; dO+=s.def[0];dX+=s.def[1];iO+=s.ia[0];iX+=s.ia[1];oO+=s.oa[0];oX+=s.oa[1]; } });
+    const dr=(dO+dX)>0?Math.round(dO/(dO+dX)*100):null; const ir=(iO+iX)>0?Math.round(iO/(iO+iX)*100):null; const or2=(oO+oX)>0?Math.round(oO/(oO+oX)*100):null;
+    const ta=iO+iX+oO+oX, taO=iO+oO; const ar=ta>0?Math.round(taO/ta*100):null;
+    return {name:p.name,dO,dX,iO,iX,oO,oX,dr,ir,or:or2,ar,ta};
+  });
+}
+
+function rateBar(r,c){
+  if(r===null) return '<span style="color:var(--text-secondary);font-size:11px">-</span>';
+  return '<div class="rate-bar"><div class="bar-bg"><div class="bar-fill" style="width:'+r+'%;background:'+c+'"></div></div><span style="font-size:11px;min-width:28px;text-align:right">'+r+'%</span></div>';
+}
+
+function renderPTable(tKey, midx){
+  if(tKey === "ALL_SUMMARY") {
+    const summary = calcAllTournamentsSummary();
+    let h = '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">出場数</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
+    summary.playerRows.forEach(r => {
+      h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.matchCount+'試合</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
     });
-    h += '</tbody></table></div></div></div>';
+    h += '</tbody></table></div>';
+    const el = document.getElementById('ptbl_ALL_SUMMARY');
+    if(el) el.innerHTML = h;
+    return;
+  }
+
+  if(!DATA[tKey]) return;
+  const rows = calcAll(DATA[tKey].players, midx);
+  let h = '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    const hasData = DATA[tKey].players.find(p=>p.name===r.name); if(!hasData || hasData.stats.every(s=>s===null||s===undefined)) return;
+    if(midx !== 'all' && (!hasData.stats[parseInt(midx)])) return;
+    h+='<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
+  });
+  h+='</tbody></table></div>'; document.getElementById('ptbl_'+tKey).innerHTML=h;
+}
+
+function setF(tKey, midx, btn){
+  document.querySelectorAll('#fr_'+tKey+' .filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderPTable(tKey, midx);
+}
+
+function buildAllCharts(tKey){
+  if(tKey === "ALL_SUMMARY") {
+    buildAllSummaryCharts();
+    return;
+  }
+
+  const t = DATA[tKey]; if(!t || !t.matches || t.matches.length === 0) return;
+  dc('matchChart_'+tKey);
+  
+  const matchColors = t.matches.map(m => {
+    if(m.result === '勝') return '#378ADD';
+    if(m.result === '負') return '#85B7EB';
+    return '#6c757d';
+  });
+
+  charts['matchChart_'+tKey] = new Chart(document.getElementById('matchChart_'+tKey),{
+    data:{
+      labels:t.matches.map(m=>'vs '+m.opp),
+      datasets:[
+        {type:'bar',label:'得点',data:t.matches.map(m=>m.us),backgroundColor:matchColors,yAxisID:'y'},
+        {type:'bar',label:'失点',data:t.matches.map(m=>m.them),backgroundColor:'#F09595',yAxisID:'y'},
+        {type:'line',label:'キープ(秒)',data:t.matches.map(m=>keepSec(m.keep)),borderColor:'#1D9E75',backgroundColor:'transparent',pointBackgroundColor:'#1D9E75',tension:0.3,yAxisID:'y2',borderDash:[4,3]},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'rgba(128,128,128,0.1)'}},y2:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:'#1D9E75',font:{size:11}}}}}
+  });
+
+  dc('atkChart_'+tKey); const atkRows = calcAll(t.players.filter(p=>p.stats.some(s=>s!==null)),'all');
+  charts['atkChart_'+tKey] = new Chart(document.getElementById('atkChart_'+tKey),{
+    type:'bar',
+    data:{
+      labels:atkRows.map(r=>r.name),
+      datasets:[{label:'内野AT率',data:atkRows.map(r=>r.ir!==null?r.ir:0),backgroundColor:'#D85A30'},{label:'外野AT率',data:atkRows.map(r=>r.or!==null?r.or:0),backgroundColor:'#1D9E75'},{label:'ディフェンス率',data:atkRows.map(r=>r.dr!==null?r.dr:0),backgroundColor:'#378ADD'}]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{grid:{display:false},ticks:{autoSkip:false,maxRotation:0,font:{size:11}}}}}
+  });
+
+  dc('scatterChart_'+tKey); const scatterData = t.matches.map(m=>({x:keepSec(m.keep),y:m.us-m.them,label:'vs '+m.opp,win:m.result==="勝", draw:m.result==="引き分け"}));
+  charts['scatterChart_'+tKey] = new Chart(document.getElementById('scatterChart_'+tKey),{
+    type:'scatter',
+    data:{datasets:[{label:'試合',data:scatterData.map(d=>({x:d.x,y:d.y})),backgroundColor:scatterData.map(d=>d.win?'#378ADD':(d.draw?'#6c757d':'#E24A4A')),pointRadius:9,pointHoverRadius:11}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var d=scatterData[ctx.dataIndex];return d.label+'：キープ'+fmtSec(d.x)+' 得失点差'+(d.y>=0?'+':'')+d.y;}}}},scales:{x:{title:{display:true,text:'キープ時間（秒）',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{title:{display:true,text:'得失点差',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}}},layout:{padding:20}}
+  });
+
+  dc('roleChart_'+tKey); const roleRows = calcAll(t.players.filter(p=>p.stats.some(s=>s!==null)),'all'); const palette=['#378ADD','#D85A30','#1D9E75','#7F77DD','#BA7517','#0F6E56','#993C1D','#534AB7','#3B6D11'];
+  charts['roleChart_'+tKey] = new Chart(document.getElementById('roleChart_'+tKey),{
+    type:'scatter',
+    data:{datasets:roleRows.map((r,i)=>({label:r.name,data:[{x:r.dO+r.dX,y:r.iO+r.iX+r.oO+r.oX}],backgroundColor:palette[i%palette.length],pointRadius:9}))},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:10,padding:10}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+'：DF'+ctx.parsed.x+'回 AT'+ctx.parsed.y+'回';}}}},scales:{x:{title:{display:true,text:'ディフェンス試行数',font:{size:11}},beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}},y:{title:{display:true,text:'アタック試投数',font:{size:11}},beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}}},layout:{padding:20}}
+  });
+}
+
+function buildAllSummaryCharts() {
+  const summary = calcAllTournamentsSummary();
+  
+  dc('atkChart_ALL_SUMMARY');
+  const atkEl = document.getElementById('atkChart_ALL_SUMMARY');
+  if(atkEl) {
+    charts['atkChart_ALL_SUMMARY'] = new Chart(atkEl, {
+      type:'bar',
+      data:{
+        labels: summary.playerRows.map(r=>r.name),
+        datasets:[
+          {label:'内野AT率',data:summary.playerRows.map(r=>r.ir!==null?r.ir:0),backgroundColor:'#D85A30'},
+          {label:'外野AT率',data:summary.playerRows.map(r=>r.or!==null?r.or:0),backgroundColor:'#1D9E75'},
+          {label:'ディフェンス率',data:summary.playerRows.map(r=>r.dr!==null?r.dr:0),backgroundColor:'#378ADD'}
+        ]
+      },
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{grid:{display:false},ticks:{autoSkip:false,maxRotation:0,font:{size:11}}}}}
+    });
+  }
+
+  dc('roleChart_ALL_SUMMARY');
+  const roleEl = document.getElementById('roleChart_ALL_SUMMARY');
+  if(roleEl) {
+    const palette=['#378ADD','#D85A30','#1D9E75','#7F77DD','#BA7517','#0F6E56','#993C1D','#534AB7','#3B6D11'];
+    charts['roleChart_ALL_SUMMARY'] = new Chart(roleEl, {
+      type:'scatter',
+      data:{datasets:summary.playerRows.map((r,i)=>({label:r.name,data:[{x:r.dO+r.dX,y:r.iO+r.iX+r.oO+r.oX}],backgroundColor:palette[i%palette.length],pointRadius:9}))},
+      options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:10,padding:10}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+'：DF'+ctx.parsed.x+'回 AT'+ctx.parsed.y+'回';}}}},scales:{x:{title:{display:true,text:'ディフェンス試行数（通算）',font:{size:11}},beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}},y:{title:{display:true,text:'アタック試投数（通算）',font:{size:11}},beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}}},layout:{padding:20}}
+    });
+  }
+}
+
+function buildMatchHTML(t, tKey){
+  const wins = t.matches.filter(m=>m.result==="勝").length;
+  const loses = t.matches.filter(m=>m.result==="負").length;
+  const draws = t.matches.filter(m=>m.result==="引き分け").length;
+  const ts = t.matches.reduce((a,m)=>a+m.us,0); const os = t.matches.reduce((a,m)=>a+m.them,0); const diff = ts - os; const maxK = Math.max.apply(null, t.matches.map(m=>keepSec(m.keep)));
+  
+  let h = '<div class="metrics"><div class="metric"><div class="metric-label">試合数</div><div class="metric-value">'+t.matches.length+'</div></div><div class="metric"><div class="metric-label">勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+wins+'勝</span> <span style="color:#A32D2D">'+loses+'敗</span>' + (draws > 0 ? ' <span style="color:var(--text-secondary)">'+draws+'分</span>' : '') + '</div></div><div class="metric"><div class="metric-label">総得点</div><div class="metric-value">'+ts+'</div></div><div class="metric"><div class="metric-label">総失点</div><div class="metric-value">'+os+'</div></div><div class="metric"><div class="metric-label">得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
+  h += '<div class="match-grid">';
+  t.matches.forEach(function(m){ 
+    var badgeCls = 'badge-win';
+    if(m.result === '負') badgeCls = 'badge-lose';
+    if(m.result === '引き分け') badgeCls = 'badge-draw';
+    
+    let noteHTML = m.notes ? '<div class="match-note">📝 ' + m.notes + '</div>' : '';
+
+    h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+badgeCls+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(m.result==='勝'?'#3B6D11':(m.result==='負'?'#A32D2D':'var(--text-primary)'))+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div>'+noteHTML+'</div>'; 
   });
   h += '</div>';
+  h += '<div class="card"><div class="card-title">ボールキープ時間（対戦別）</div>';
+  t.matches.forEach(function(m){ 
+    var sec = keepSec(m.keep); var pct = maxK > 0 ? Math.round(sec/maxK*100) : 0; 
+    var badgeCls = 'badge-win';
+    if(m.result === '負') badgeCls = 'badge-lose';
+    if(m.result === '引き分け') badgeCls = 'badge-draw';
+    h += '<div class="keep-row"><div class="keep-label">vs '+m.opp+'</div><div class="keep-bg"><div class="keep-fill" style="width:'+pct+'%;background:'+(m.result==='勝'?'#1D9E75':(m.result==='負'?'#D85A30':'#6c757d'))+'"></div></div><div class="keep-val">'+m.keep+' <span class="badge '+badgeCls+'">'+m.result+'</span></div></div>'; 
+  });
+  h += '</div>';
+  h += '<div class="card"><div class="card-title">得失点・キープ時間（試合別）</div><div class="legend"><span><span class="leg-box" style="background:#378ADD"></span>得点（勝）</span><span><span class="leg-box" style="background:#85B7EB"></span>得点（負）</span><span><span class="leg-box" style="background:#6c757d"></span>得点（分）</span><span><span class="leg-box" style="background:#F09595"></span>失点</span><span><span class="leg-box" style="background:#1D9E75;width:18px;height:3px;border-radius:0;margin-top:3px"></span>キープ(秒)</span></div><div class="chart-container" style="height:200px"><canvas id="matchChart_'+tKey+'"></canvas></div></div>';
   return h;
 }
 
-function triggerSmartPrint() {
-  const btn = document.getElementById('pdfBtn');
-  btn.innerText = "⏳ 準備中...";
-  const curKey = activeTournamentKey;
-  const printTitle = document.getElementById('printTournamentTitle');
-  if(printTitle && DATA[curKey]) printTitle.textContent = DATA[curKey].label;
-  if (!curKey) return;
+function buildPlayerHTML(t, tKey){
+  let h = '<div class="filter-row" id="fr_'+tKey+'"><button class="filter-btn active" onclick="setF(\''+tKey+'\',\'all\',this)">全試合</button>';
+  t.matches.forEach(function(m,i){ h += '<button class="filter-btn" onclick="setF(\''+tKey+'\',\''+i+'\',this)">vs '+m.opp+'</button>'; });
+  h += '</div>';
+  h += '<div class="card"><div id="ptbl_'+tKey+'"></div></div>';
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別アタック・ディフェンス成功率（全試合）</div><div class="legend"><span><span class="leg-box" style="background:#D85A30"></span>内野AT率</span><span><span class="leg-box" style="background:#1D9E75"></span>外野AT率</span><span><span class="leg-box" style="background:#378ADD"></span>ディフェンス率</span></div><div class="chart-container" style="height:350px"><canvas id="atkChart_'+tKey+'"></canvas></div></div>';
+  return h;
+}
+
+function buildInsightHTML(t, tKey){
+  const wins = t.matches.filter(m=>m.result==="勝"); const loses = t.matches.filter(m=>m.result==="負");
+  const winKeepAvg = wins.length?Math.round(wins.reduce((a,m)=>a+keepSec(m.keep),0)/wins.length):0; const loseKeepAvg = loses.length?Math.round(loses.reduce((a,m)=>a+keepSec(m.keep),0)/loses.length):0;
+  const rows = calcAll(t.players,"all"); const atkPlayers = rows.filter(r=>r.ta>0).sort((a,b)=>(b.ar||0)-(a.ar||0)); const topAtk = atkPlayers[0];
+  const defPlayers = rows.filter(r=>(r.dO+r.dX)>0).sort((a,b)=>(b.dr||0)-(a.dr||0)); const topDef = defPlayers[0];
+  const totalUA = rows.reduce((a,r)=>a+r.iO+r.iX,0); const totalOA = rows.reduce((a,r)=>a+r.oO+r.oX,0); const uaSucc = rows.reduce((a,r)=>a+r.iO,0); const oaSucc = rows.reduce((a,r)=>a+r.oO,0);
+  const uaRate = totalUA>0?Math.round(uaSucc/totalUA*100):0; const oaRate = totalOA>0?Math.round(oaSucc/totalOA*100):0;
+  const totalDef = rows.reduce((a,r)=>a+r.dO+r.dX,0); const defSucc = rows.reduce((a,r)=>a+r.dO,0); const teamDefRate = totalDef>0?Math.round(defSucc/totalDef*100):0;
+
+  const findings = [
+    { icon:"⏱", cls:"fi-blue", title:"キープ時間と勝敗の相関", desc:'勝利試合の平均キープ時間は<span class="hl hl-green">'+fmtSec(winKeepAvg)+'</span>、敗戦試合は<span class="hl hl-red">'+fmtSec(loseKeepAvg)+'</span>。キープが長い試合ほど得点につながる傾向がある。' },
+    { icon:"🎯", cls:"fi-amber", title:"内野 vs 外野アタック効率", desc:'内野アタック成功率は<span class="hl hl-blue">'+uaRate+'%</span>（'+uaSucc+'/'+totalUA+'）、外野アタック成功率は<span class="hl hl-blue">'+oaRate+'%</span>（'+oaSucc+'/'+totalOA+'）。内野アタック精度を軸に組み立てることが重要。' },
+    { icon:"🛡", cls:"fi-green", title:"チーム全体のディフェンス", desc:'チーム全体のディフェンス成功率は<span class="hl hl-green">'+teamDefRate+'%</span>（'+defSucc+'/'+totalDef+'）。最も成功率が高いのは<span class="hl hl-blue">'+(topDef?topDef.name:"-")+'</span>'+(topDef?"（"+topDef.dr+"%）":"")+'。防衛ラインの維持が勝敗の鍵。' },
+    { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分担の最適化が確認できます。' }
+  ];
   
-  let printContainer = document.getElementById('print_tables_' + curKey);
-  if(!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print_tables_' + curKey;
-    document.getElementById('sec_' + curKey).appendChild(printContainer);
+  let h = '<button class="btn-ai-generate" onclick="generateGeminiInsight(\''+tKey+'\')">🤖 GeminiでAI戦術考察を生成</button>';
+  h += '<div id="ai_insight_container_'+tKey+'"></div>';
+  h += '<div class="card"><div class="finding-list">';
+  findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
+  h += '</div></div>';
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">キープ時間と得点差の相関</div><div class="legend"><span><span class="leg-box" style="background:#378ADD;border-radius:50%;width:10px;height:10px"></span>勝利</span><span><span class="leg-box" style="background:#6c757d;border-radius:50%;width:10px;height:10px"></span>引分</span><span><span class="leg-box" style="background:#E24A4A;border-radius:50%;width:10px;height:10px"></span>敗戦</span></div><div class="chart-container" style="height:200px"><canvas id="scatterChart_'+tKey+'"></canvas></div></div>';
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_'+tKey+'"></canvas></div></div>';
+  return h;
+}
+
+// 全大会通算用画面のビルド
+function buildAllSummaryHTML() {
+  const summary = calcAllTournamentsSummary();
+  const diff = summary.totalUs - summary.totalThem;
+
+  let h = '<div class="metrics"><div class="metric"><div class="metric-label">通算試合数</div><div class="metric-value">'+summary.totalMatches+'</div></div><div class="metric"><div class="metric-label">通算勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+summary.wins+'勝</span> <span style="color:#A32D2D">'+summary.loses+'敗</span>' + (summary.draws > 0 ? ' <span style="color:var(--text-secondary)">'+summary.draws+'分</span>' : '') + '</div></div><div class="metric"><div class="metric-label">通算得点</div><div class="metric-value">'+summary.totalUs+'</div></div><div class="metric"><div class="metric-label">通算失点</div><div class="metric-value">'+summary.totalThem+'</div></div><div class="metric"><div class="metric-label">通算得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
+
+  h += '<div class="card"><div class="card-title">全大会通算 選手成績一覧</div><div id="ptbl_ALL_SUMMARY"></div></div>';
+
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">通算 選手別アタック・ディフェンス成功率</div><div class="legend"><span><span class="leg-box" style="background:#D85A30"></span>内野AT率</span><span><span class="leg-box" style="background:#1D9E75"></span>外野AT率</span><span><span class="leg-box" style="background:#378ADD"></span>ディフェンス率</span></div><div class="chart-container" style="height:350px"><canvas id="atkChart_ALL_SUMMARY"></canvas></div></div>';
+
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">通算 選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_ALL_SUMMARY"></canvas></div></div>';
+
+  // 選手ごとのGemini個別考察カード
+  h += '<div class="card" style="margin-top:12px"><div class="card-title">✨ 選手別Gemini個別考察</div><div class="player-card-grid">';
+  summary.playerRows.forEach(p => {
+    h += `<div class="player-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong style="font-size:14px;">${p.name}</strong>
+        <button class="btn-player-ai" onclick="generatePlayerGeminiInsight('${p.name}')">🤖 個別考察を生成</button>
+      </div>
+      <div style="font-size:11px; color:var(--text-secondary); line-height:1.5; margin-bottom:8px;">
+        出場数: ${p.matchCount}試合 | DF率: ${p.dr !== null ? p.dr + '%' : '-'} | 内野AT率: ${p.ir !== null ? p.ir + '%' : '-'} | 外野AT率: ${p.or !== null ? p.or + '%' : '-'}
+      </div>
+      <div id="player_ai_box_${p.name}" style="font-size:12px; color:var(--text-primary);"></div>
+    </div>`;
+  });
+  h += '</div></div>';
+
+  return h;
+}
+
+// Gemini API を呼び出して全大会のチーム戦術考察を取得
+async function generateGeminiInsight(tKey) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert("Gemini APIキーが設定されていません。画面右上の「⚙ 設定」からキーを入力してください。");
+    openSettingsModal();
+    return;
   }
-  printContainer.innerHTML = buildPrintOnlyMatchTablesHTML(curKey);
 
-  const subSections = document.querySelectorAll('#sec_' + curKey + ' .sub-section');
-  subSections.forEach(s => { s.style.setProperty('display', 'block', 'important'); s.style.setProperty('opacity', '1', 'important'); });
+  const container = document.getElementById('ai_insight_container_' + tKey);
+  container.innerHTML = '<div class="card"><div style="text-align:center; padding:16px; font-size:13px; color:var(--text-secondary);">⏳ Geminiがデータを分析中...</div></div>';
 
-  setTimeout(() => {
-    const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
-    canvases.forEach(canvas => {
-      const parent = canvas.parentNode;
-      const oldImg = parent.querySelector('.print-image-fallback');
-      if (oldImg) oldImg.remove();
-      try {
-        const imgData = canvas.toDataURL('image/png');
-        const img = document.createElement('img');
-        img.src = imgData; img.className = 'print-image-fallback';
-        parent.appendChild(img);
-      } catch (e) {}
+  const t = DATA[tKey];
+  if (!t) return;
+  const rows = calcAll(t.players, "all");
+  
+  const matchSummary = t.matches.map(m => `・vs ${m.opp}: ${m.result} (${m.us}-${m.them}), キープ:${m.keep}`).join('\n');
+  const playerSummary = rows.map(r => `・${r.name}: アタック試投数=${r.ta}, DF率=${r.dr !== null ? r.dr + '%' : 'データなし'}, 内野AT率=${r.ir !== null ? r.ir + '%' : 'データなし'}, 外野AT率=${r.or !== null ? r.or + '%' : 'データなし'}`).join('\n');
+
+  const promptText = `あなたはドッジボールの優秀な監督・コーチです。
+以下の大会データをもとに、チームの強み、課題、次戦に向けた具体的かつ前向きな戦術アドバイスを簡潔にまとめてください。
+
+【重要な前提定義】
+このチームでは「アタッカー」を、アタック試投数（内野AT試投数＋外野AT試投数の合計）が多い選手と定義します。選手個人データの「アタック試投数」を確認し、試投数が多い選手をアタッカー、少ない選手をアタッカー以外（ディフェンス中心の選手など）として扱った上で、役割ごとの傾向や課題を考察してください。試投数が少ない選手の低いAT率だけを見て一律に評価しないよう注意してください。
+
+【大会名】
+${t.label}
+
+【試合結果】
+${matchSummary}
+
+【選手個人データ（全試合通算）】
+${playerSummary}
+
+【出力フォーマット】
+- 総評（1〜2文）
+- チームの強み・良かった点
+- 改善すべき課題
+- 具体的アドバイス・次へのアクション`;
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
     });
-    btn.innerText = "📄 PDF出力";
-    window.print();
-    setTimeout(() => {
-      const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
-      if (activeSubBtn) {
-        const subKey = activeSubBtn.id.replace('stab_' + curKey + '_', '');
-        subSections.forEach(s => { if (s.id !== 'sub_' + curKey + '_' + subKey) { s.style.removeProperty('display'); s.style.removeProperty('opacity'); } });
-      }
-      if(printContainer) printContainer.innerHTML = '';
-    }, 1000);
-  }, 800);
+
+    const resData = await response.json();
+
+    if (!response.ok) {
+      const errorMsg = resData.error ? resData.error.message : `HTTP Error ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
+      throw new Error("APIからの応答形式が予期しないものでした。");
+    }
+
+    const aiText = resData.candidates[0].content.parts[0].text;
+
+    container.innerHTML = `
+      <div class="card" style="border: 1px solid var(--purple);">
+        <div class="card-title" style="color:var(--purple);">✨ Gemini AI戦術考察</div>
+        <div class="ai-output-box">${formatMarkdown(aiText)}</div>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Gemini API Error:", err);
+    container.innerHTML = `
+      <div class="card" style="border: 1px solid var(--red);">
+        <div style="color:var(--red); font-size:13px; font-weight:bold;">分析の生成に失敗しました。</div>
+        <div style="font-size:12px; color:var(--text-danger); margin-top:6px; word-break:break-all;">
+          <strong>エラー詳細:</strong> ${err.message}
+        </div>
+      </div>
+    `;
+  }
+}
+
+// 選手ごとのGemini個別考察生成
+async function generatePlayerGeminiInsight(playerName) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert("Gemini APIキーが設定されていません。画面右上の「⚙ 設定」からキーを入力してください。");
+    openSettingsModal();
+    return;
+  }
+
+  const box = document.getElementById(`player_ai_box_${playerName}`);
+  if(!box) return;
+  box.innerHTML = '<div style="color:var(--text-secondary); padding:6px 0;">⏳ 考察を生成中...</div>';
+
+  const summary = calcAllTournamentsSummary();
+  const pData = summary.playerRows.find(r => r.name === playerName);
+  if(!pData) return;
+
+  const promptText = `あなたは小・中学生ドッジボールの優しい温かい名監督・コーチです。
+選手「${pData.name}」の全大会通算成績データをもとに、この選手の強み・良い点、さらに成長するための具体的なアドバイス（得意なプレースタイルや意識すべき練習ポイント）を、選手本人が読んでモチベーションが上がるように簡潔に（200文字程度で）まとめてください。
+
+【選手通算データ】
+・選手名: ${pData.name}
+・通算出場試合数: ${pData.matchCount}試合
+・ディフェンス成功数/試行数: ${pData.dO}/${pData.dO+pData.dX} (成功率: ${pData.dr !== null ? pData.dr + '%' : 'データなし'})
+・内野アタック成功数/試投数: ${pData.iO}/${pData.iO+pData.iX} (成功率: ${pData.ir !== null ? pData.ir + '%' : 'データなし'})
+・外野アタック成功数/試投数: ${pData.oO}/${pData.oO+pData.oX} (成功率: ${pData.or !== null ? pData.or + '%' : 'データなし'})
+・総アタック試投数: ${pData.ta}回`;
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+
+    const resData = await response.json();
+    if (!response.ok) throw new Error(resData.error ? resData.error.message : `HTTP Error ${response.status}`);
+    const aiText = resData.candidates[0].content.parts[0].text;
+
+    box.innerHTML = `
+      <div class="ai-output-box" style="margin-top:6px; background:var(--bg-primary); border:1px solid var(--purple);">
+        ${formatMarkdown(aiText)}
+      </div>
+    `;
+  } catch(err) {
+    console.error("Player Gemini API Error:", err);
+    box.innerHTML = `<div style="color:var(--red); font-size:11px; margin-top:4px;">考察の生成に失敗しました。</div>`;
+  }
+}
+
+function formatMarkdown(text) {
+  return text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^#+\s*(.*)$/gm, '<strong style="font-size:13px; display:block; margin-top:6px;">$1</strong>');
+}
+
+function switchSub(tKey, subKey){
+  document.querySelectorAll('#subs_'+tKey+' .sub-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('stab_'+tKey+'_'+subKey).classList.add('active');
+  document.querySelectorAll('#subcon_'+tKey+' .sub-section').forEach(s => s.className = 'sub-section');
+  document.getElementById('sub_'+tKey+'_'+subKey).classList.add('active');
+  if(subKey==='player') renderPTable(tKey,'all');
+  setTimeout(() => { buildAllCharts(tKey); }, 50);
+}
+
+function switchT(tKey){
+  activeTournamentKey = tKey; 
+  document.querySelectorAll('.tab-wrapper').forEach(t => t.classList.remove('active'));
+  const targetTab = document.getElementById('tabwrap_'+tKey); 
+  if(targetTab) targetTab.classList.add('active');
+  
+  document.querySelectorAll('.section').forEach(s => s.className = 'section');
+  const targetSec = document.getElementById('sec_'+tKey); 
+  if(targetSec) targetSec.className = 'section active';
+  
+  renderPTable(tKey,'all'); 
+  setTimeout(() => { buildAllCharts(tKey); }, 80);
+}
+
+function initDashboard() {
+  var tTabs = document.getElementById('tTabs'); 
+  var tContent = document.getElementById('tContent');
+  tTabs.innerHTML = ''; 
+  tContent.innerHTML = ''; 
+  
+  var tKeys = Object.keys(DATA);
+  if (tKeys.length === 0) {
+    tTabs.style.display = 'none'; 
+    tContent.innerHTML = '<div class="no-data-msg">大会データが登録されていません。</div>'; 
+    return;
+  } else { 
+    tTabs.style.display = 'flex'; 
+  }
+
+  // --- 全大会通算タブを先頭に追加 ---
+  var allWrapper = document.createElement('div');
+  allWrapper.className = 'tab-wrapper all-summary-tab' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
+  allWrapper.id = 'tabwrap_ALL_SUMMARY';
+  allWrapper.onclick = function(){ switchT('ALL_SUMMARY'); };
+  
+  var allTabBtn = document.createElement('button');
+  allTabBtn.className = 'tournament-tab';
+  allTabBtn.textContent = '📊 全大会通算';
+  allWrapper.appendChild(allTabBtn);
+  tTabs.appendChild(allWrapper);
+
+  var allSecEl = document.createElement('div');
+  allSecEl.className = 'section' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
+  allSecEl.id = 'sec_ALL_SUMMARY';
+  allSecEl.innerHTML = buildAllSummaryHTML();
+  tContent.appendChild(allSecEl);
+
+  // --- 個別大会タブ ---
+  tKeys.forEach(function(tKey, i){
+    var t = DATA[tKey]; 
+    var wrapper = document.createElement('div');
+    wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : ''); 
+    wrapper.id = 'tabwrap_' + tKey;
+    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
+
+    var tabEl = document.createElement('button'); 
+    tabEl.className = 'tournament-tab'; 
+    tabEl.textContent = t.label;
+    
+    var delBtn = document.createElement('button'); 
+    delBtn.className = 'btn-delete-tab'; 
+    delBtn.innerHTML = '×';
+    const doDelete = function(e){ e.stopPropagation(); e.preventDefault(); deleteTournament(tKey, e); };
+    delBtn.onclick = delBtn.ontouchend = doDelete;
+
+    wrapper.appendChild(tabEl); 
+    wrapper.appendChild(delBtn); 
+    tTabs.appendChild(wrapper);
+
+    var secEl = document.createElement('div'); 
+    secEl.className = 'section' + (tKey === activeTournamentKey ? ' active' : ''); 
+    secEl.id = 'sec_'+tKey;
+    secEl.innerHTML = '<div class="sub-nav" id="subs_'+tKey+'"><button class="sub-btn active" id="stab_'+tKey+'_match" onclick="switchSub(\''+tKey+'\',\'match\')">試合結果</button><button class="sub-btn" id="stab_'+tKey+'_player" onclick="switchSub(\''+tKey+'\',\'player\')">選手データ</button><button class="sub-btn" id="stab_'+tKey+'_insight" onclick="switchSub(\''+tKey+'\',\'insight\')">考察</button></div>'
+      +'<div id="subcon_'+tKey+'"><div class="sub-section active" id="sub_'+tKey+'_match">'+buildMatchHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_player">'+buildPlayerHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_insight">'+buildInsightHTML(t,tKey)+'</div></div>';
+    tContent.appendChild(secEl);
+  });
 }
 
 function deleteTournament(tKey, event) {
@@ -1226,8 +1670,8 @@ function deleteTournament(tKey, event) {
   delete DATA[tKey]; saveToStorage();
   const remainingKeys = Object.keys(DATA);
   if (remainingKeys.length > 0) {
-    if (activeTournamentKey === tKey) activeTournamentKey = remainingKeys[0];
-    initDashboard(); switchT(activeTournamentKey);
+    activeTournamentKey = "ALL_SUMMARY";
+    initDashboard(); switchT("ALL_SUMMARY");
   } else {
     activeTournamentKey = null; initDashboard();
   }
@@ -1355,284 +1799,78 @@ function importLegacyFormat(title, lines) {
   document.getElementById('tournamentTitle').value = ''; document.getElementById('csvPasteArea').value = ''; toggleInputArea();
 }
 
-function calcAll(players, midx){
-  return players.map(p=>{
-    let dO=0,dX=0,iO=0,iX=0,oO=0,oX=0; const idxs = midx==="all"?[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]:[parseInt(midx)];
-    idxs.forEach(i=>{ if(p.stats && p.stats[i]) { const s=p.stats[i]; dO+=s.def[0];dX+=s.def[1];iO+=s.ia[0];iX+=s.ia[1];oO+=s.oa[0];oX+=s.oa[1]; } });
-    const dr=(dO+dX)>0?Math.round(dO/(dO+dX)*100):null; const ir=(iO+iX)>0?Math.round(iO/(iO+iX)*100):null; const or2=(oO+oX)>0?Math.round(oO/(oO+oX)*100):null;
-    const ta=iO+iX+oO+oX, taO=iO+oO; const ar=ta>0?Math.round(taO/ta*100):null;
-    return {name:p.name,dO,dX,iO,iX,oO,oX,dr,ir,or:or2,ar,ta};
-  });
-}
-
-function rateBar(r,c){
-  if(r===null) return '<span style="color:var(--text-secondary);font-size:11px">-</span>';
-  return '<div class="rate-bar"><div class="bar-bg"><div class="bar-fill" style="width:'+r+'%;background:'+c+'"></div></div><span style="font-size:11px;min-width:28px;text-align:right">'+r+'%</span></div>';
-}
-
-function renderPTable(tKey, midx){
-  if(!DATA[tKey]) return;
-  const rows = calcAll(DATA[tKey].players, midx);
-  let h = '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
-  rows.forEach(r=>{
-    const hasData = DATA[tKey].players.find(p=>p.name===r.name); if(!hasData || hasData.stats.every(s=>s===null||s===undefined)) return;
-    if(midx !== 'all' && (!hasData.stats[parseInt(midx)])) return;
-    h+='<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
-  });
-  h+='</tbody></table></div>'; document.getElementById('ptbl_'+tKey).innerHTML=h;
-}
-
-function setF(tKey, midx, btn){
-  document.querySelectorAll('#fr_'+tKey+' .filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderPTable(tKey, midx);
-}
-
-function buildAllCharts(tKey){
-  const t = DATA[tKey]; if(!t || !t.matches || t.matches.length === 0) return;
-  dc('matchChart_'+tKey);
-  
-  const matchColors = t.matches.map(m => {
-    if(m.result === '勝') return '#378ADD';
-    if(m.result === '負') return '#85B7EB';
-    return '#6c757d';
-  });
-
-  charts['matchChart_'+tKey] = new Chart(document.getElementById('matchChart_'+tKey),{
-    data:{
-      labels:t.matches.map(m=>'vs '+m.opp),
-      datasets:[
-        {type:'bar',label:'得点',data:t.matches.map(m=>m.us),backgroundColor:matchColors,yAxisID:'y'},
-        {type:'bar',label:'失点',data:t.matches.map(m=>m.them),backgroundColor:'#F09595',yAxisID:'y'},
-        {type:'line',label:'キープ(秒)',data:t.matches.map(m=>keepSec(m.keep)),borderColor:'#1D9E75',backgroundColor:'transparent',pointBackgroundColor:'#1D9E75',tension:0.3,yAxisID:'y2',borderDash:[4,3]},
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'rgba(128,128,128,0.1)'}},y2:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:'#1D9E75',font:{size:11}}}}}
-  });
-
-  dc('atkChart_'+tKey); const atkRows = calcAll(t.players.filter(p=>p.stats.some(s=>s!==null)),'all');
-  charts['atkChart_'+tKey] = new Chart(document.getElementById('atkChart_'+tKey),{
-    type:'bar',
-    data:{
-      labels:atkRows.map(r=>r.name),
-      datasets:[{label:'内野AT率',data:atkRows.map(r=>r.ir!==null?r.ir:0),backgroundColor:'#D85A30'},{label:'外野AT率',data:atkRows.map(r=>r.or!==null?r.or:0),backgroundColor:'#1D9E75'},{label:'ディフェンス率',data:atkRows.map(r=>r.dr!==null?r.dr:0),backgroundColor:'#378ADD'}]
-    },
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%';},font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{grid:{display:false},ticks:{autoSkip:false,maxRotation:0,font:{size:11}}}}}
-  });
-
-  dc('scatterChart_'+tKey); const scatterData = t.matches.map(m=>({x:keepSec(m.keep),y:m.us-m.them,label:'vs '+m.opp,win:m.result==="勝", draw:m.result==="引き分け"}));
-  charts['scatterChart_'+tKey] = new Chart(document.getElementById('scatterChart_'+tKey),{
-    type:'scatter',
-    data:{datasets:[{label:'試合',data:scatterData.map(d=>({x:d.x,y:d.y})),backgroundColor:scatterData.map(d=>d.win?'#378ADD':(d.draw?'#6c757d':'#E24B4A')),pointRadius:9,pointHoverRadius:11}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var d=scatterData[ctx.dataIndex];return d.label+'：キープ'+fmtSec(d.x)+' 得失点差'+(d.y>=0?'+':'')+d.y;}}}},scales:{x:{title:{display:true,text:'キープ時間（秒）',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},y:{title:{display:true,text:'得失点差',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}}},layout:{padding:20}}
-  });
-
-  dc('roleChart_'+tKey); const roleRows = calcAll(t.players.filter(p=>p.stats.some(s=>s!==null)),'all'); const palette=['#378ADD','#D85A30','#1D9E75','#7F77DD','#BA7517','#0F6E56','#993C1D','#534AB7','#3B6D11'];
-  charts['roleChart_'+tKey] = new Chart(document.getElementById('roleChart_'+tKey),{
-    type:'scatter',
-    data:{datasets:roleRows.map((r,i)=>({label:r.name,data:[{x:r.dO+r.dX,y:r.iO+r.iX+r.oO+r.oX}],backgroundColor:palette[i%palette.length],pointRadius:9}))},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:10,padding:10}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+'：DF'+ctx.parsed.x+'回 AT'+ctx.parsed.y+'回';}}}},scales:{x:{title:{display:true,text:'ディフェンス試行数',font:{size:11}},beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}},y:{title:{display:true,text:'アタック試投数',font:{size:11}},beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}}},layout:{padding:20}}
-  });
-}
-
-function buildMatchHTML(t, tKey){
-  const wins = t.matches.filter(m=>m.result==="勝").length;
-  const loses = t.matches.filter(m=>m.result==="負").length;
-  const draws = t.matches.filter(m=>m.result==="引き分け").length;
-  const ts = t.matches.reduce((a,m)=>a+m.us,0); const os = t.matches.reduce((a,m)=>a+m.them,0); const diff = ts - os; const maxK = Math.max.apply(null, t.matches.map(m=>keepSec(m.keep)));
-  
-  let h = '<div class="metrics"><div class="metric"><div class="metric-label">試合数</div><div class="metric-value">'+t.matches.length+'</div></div><div class="metric"><div class="metric-label">勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+wins+'勝</span> <span style="color:#A32D2D">'+loses+'敗</span>' + (draws > 0 ? ' <span style="color:var(--text-secondary)">'+draws+'分</span>' : '') + '</div></div><div class="metric"><div class="metric-label">総得点</div><div class="metric-value">'+ts+'</div></div><div class="metric"><div class="metric-label">総失点</div><div class="metric-value">'+os+'</div></div><div class="metric"><div class="metric-label">得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
-  h += '<div class="match-grid">';
-  t.matches.forEach(function(m){ 
-    var badgeCls = 'badge-win';
-    if(m.result === '負') badgeCls = 'badge-lose';
-    if(m.result === '引き分け') badgeCls = 'badge-draw';
-    
-    let noteHTML = m.notes ? '<div class="match-note">📝 ' + m.notes + '</div>' : '';
-
-    h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+badgeCls+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(m.result==='勝'?'#3B6D11':(m.result==='負'?'#A32D2D':'var(--text-primary)'))+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div>'+noteHTML+'</div>'; 
-  });
-  h += '</div>';
-  h += '<div class="card"><div class="card-title">ボールキープ時間（対戦別）</div>';
-  t.matches.forEach(function(m){ 
-    var sec = keepSec(m.keep); var pct = maxK > 0 ? Math.round(sec/maxK*100) : 0; 
-    var badgeCls = 'badge-win';
-    if(m.result === '負') badgeCls = 'badge-lose';
-    if(m.result === '引き分け') badgeCls = 'badge-draw';
-    h += '<div class="keep-row"><div class="keep-label">vs '+m.opp+'</div><div class="keep-bg"><div class="keep-fill" style="width:'+pct+'%;background:'+(m.result==='勝'?'#1D9E75':(m.result==='負'?'#D85A30':'#6c757d'))+'"></div></div><div class="keep-val">'+m.keep+' <span class="badge '+badgeCls+'">'+m.result+'</span></div></div>'; 
-  });
-  h += '</div>';
-  h += '<div class="card"><div class="card-title">得失点・キープ時間（試合別）</div><div class="legend"><span><span class="leg-box" style="background:#378ADD"></span>得点（勝）</span><span><span class="leg-box" style="background:#85B7EB"></span>得点（負）</span><span><span class="leg-box" style="background:#6c757d"></span>得点（分）</span><span><span class="leg-box" style="background:#F09595"></span>失点</span><span><span class="leg-box" style="background:#1D9E75;width:18px;height:3px;border-radius:0;margin-top:3px"></span>キープ(秒)</span></div><div class="chart-container" style="height:200px"><canvas id="matchChart_'+tKey+'"></canvas></div></div>';
-  return h;
-}
-
-function buildPlayerHTML(t, tKey){
-  let h = '<div class="filter-row" id="fr_'+tKey+'"><button class="filter-btn active" onclick="setF(\''+tKey+'\',\'all\',this)">全試合</button>';
-  t.matches.forEach(function(m,i){ h += '<button class="filter-btn" onclick="setF(\''+tKey+'\',\''+i+'\',this)">vs '+m.opp+'</button>'; });
-  h += '</div>';
-  h += '<div class="card"><div id="ptbl_'+tKey+'"></div></div>';
-  h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別アタック・ディフェンス成功率（全試合）</div><div class="legend"><span><span class="leg-box" style="background:#D85A30"></span>内野AT率</span><span><span class="leg-box" style="background:#1D9E75"></span>外野AT率</span><span><span class="leg-box" style="background:#378ADD"></span>ディフェンス率</span></div><div class="chart-container" style="height:350px"><canvas id="atkChart_'+tKey+'"></canvas></div></div>';
-  return h;
-}
-
-function buildInsightHTML(t, tKey){
-  const wins = t.matches.filter(m=>m.result==="勝"); const loses = t.matches.filter(m=>m.result==="負");
-  const winKeepAvg = wins.length?Math.round(wins.reduce((a,m)=>a+keepSec(m.keep),0)/wins.length):0; const loseKeepAvg = loses.length?Math.round(loses.reduce((a,m)=>a+keepSec(m.keep),0)/loses.length):0;
-  const rows = calcAll(t.players,"all"); const atkPlayers = rows.filter(r=>r.ta>0).sort((a,b)=>(b.ar||0)-(a.ar||0)); const topAtk = atkPlayers[0];
-  const defPlayers = rows.filter(r=>(r.dO+r.dX)>0).sort((a,b)=>(b.dr||0)-(a.dr||0)); const topDef = defPlayers[0];
-  const totalUA = rows.reduce((a,r)=>a+r.iO+r.iX,0); const totalOA = rows.reduce((a,r)=>a+r.oO+r.oX,0); const uaSucc = rows.reduce((a,r)=>a+r.iO,0); const oaSucc = rows.reduce((a,r)=>a+r.oO,0);
-  const uaRate = totalUA>0?Math.round(uaSucc/totalUA*100):0; const oaRate = totalOA>0?Math.round(oaSucc/totalOA*100):0;
-  const totalDef = rows.reduce((a,r)=>a+r.dO+r.dX,0); const defSucc = rows.reduce((a,r)=>a+r.dO,0); const teamDefRate = totalDef>0?Math.round(defSucc/totalDef*100):0;
-
-  const findings = [
-    { icon:"⏱", cls:"fi-blue", title:"キープ時間と勝敗の相関", desc:'勝利試合の平均キープ時間は<span class="hl hl-green">'+fmtSec(winKeepAvg)+'</span>、敗戦試合は<span class="hl hl-red">'+fmtSec(loseKeepAvg)+'</span>。キープが長い試合ほど得点につながる傾向がある。' },
-    { icon:"🎯", cls:"fi-amber", title:"内野 vs 外野アタック効率", desc:'内野アタック成功率は<span class="hl hl-blue">'+uaRate+'%</span>（'+uaSucc+'/'+totalUA+'）、外野アタック成功率は<span class="hl hl-blue">'+oaRate+'%</span>（'+oaSucc+'/'+totalOA+'）。内野アタック精度を軸に組み立てることが重要。' },
-    { icon:"🛡", cls:"fi-green", title:"チーム全体のディフェンス", desc:'チーム全体のディフェンス成功率は<span class="hl hl-green">'+teamDefRate+'%</span>（'+defSucc+'/'+totalDef+'）。最も成功率が高いのは<span class="hl hl-blue">'+(topDef?topDef.name:"-")+'</span>'+(topDef?"（"+topDef.dr+"%）":"")+'。防衛ラインの維持が勝敗の鍵。' },
-    { icon:"⚡", cls:"fi-blue", title:"攻撃のアクティビティ分析", desc:'チーム内のアタック成功率トップは<span class="hl hl-blue">'+(topAtk?topAtk.name:"-")+'</span>（'+(topAtk?topAtk.ar:"-")+'%）。役割分担の最適化が確認できます。' }
-  ];
-  
-  let h = '<button class="btn-ai-generate" onclick="generateGeminiInsight(\''+tKey+'\')">🤖 GeminiでAI戦術考察を生成</button>';
-  h += '<div id="ai_insight_container_'+tKey+'"></div>';
-  h += '<div class="card"><div class="finding-list">';
-  findings.forEach(function(f){ h += '<div class="finding-item"><div class="finding-icon '+f.cls+'">'+f.icon+'</div><div><div class="finding-title">'+f.title+'</div><div class="finding-desc">'+f.desc+'</div></div></div>'; });
-  h += '</div></div>';
-  h += '<div class="card" style="margin-top:12px"><div class="card-title">キープ時間と得点差の相関</div><div class="legend"><span><span class="leg-box" style="background:#378ADD;border-radius:50%;width:10px;height:10px"></span>勝利</span><span><span class="leg-box" style="background:#6c757d;border-radius:50%;width:10px;height:10px"></span>引分</span><span><span class="leg-box" style="background:#E24A4A;border-radius:50%;width:10px;height:10px"></span>敗戦</span></div><div class="chart-container" style="height:200px"><canvas id="scatterChart_'+tKey+'"></canvas></div></div>';
-  h += '<div class="card" style="margin-top:12px"><div class="card-title">選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_'+tKey+'"></canvas></div></div>';
-  return h;
-}
-
-// Gemini API を呼び出して戦術考察を取得
-async function generateGeminiInsight(tKey) {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    alert("Gemini APIキーが設定されていません。画面右上の「⚙ 設定」からキーを入力してください。");
-    openSettingsModal();
-    return;
-  }
-
-  const container = document.getElementById('ai_insight_container_' + tKey);
-  container.innerHTML = '<div class="card"><div style="text-align:center; padding:16px; font-size:13px; color:var(--text-secondary);">⏳ Geminiがデータを分析中...</div></div>';
-
+function buildPrintOnlyMatchTablesHTML(tKey) {
+  if(tKey === "ALL_SUMMARY") return '';
   const t = DATA[tKey];
-  if (!t) return;
-  const rows = calcAll(t.players, "all");
-  
-  const matchSummary = t.matches.map(m => `・vs ${m.opp}: ${m.result} (${m.us}-${m.them}), キープ:${m.keep}`).join('\n');
-  const playerSummary = rows.map(r => `・${r.name}: アタック試投数=${r.ta}, DF率=${r.dr !== null ? r.dr + '%' : 'データなし'}, 内野AT率=${r.ir !== null ? r.ir + '%' : 'データなし'}, 外野AT率=${r.or !== null ? r.or + '%' : 'データなし'}`).join('\n');
-
-  const promptText = `あなたはドッジボールの優秀な監督・コーチです。
-以下の大会データをもとに、チームの強み、課題、次戦に向けた具体的かつ前向きな戦術アドバイスを簡潔にまとめてください。
-
-【重要な前提定義】
-このチームでは「アタッカー」を、アタック試投数（内野AT試投数＋外野AT試投数の合計）が多い選手と定義します。選手個人データの「アタック試投数」を確認し、試投数が多い選手をアタッカー、少ない選手をアタッカー以外（ディフェンス中心の選手など）として扱った上で、役割ごとの傾向や課題を考察してください。試投数が少ない選手の低いAT率だけを見て一律に評価しないよう注意してください。
-
-【大会名】
-${t.label}
-
-【試合結果】
-${matchSummary}
-
-【選手個人データ（全試合通算）】
-${playerSummary}
-
-【出力フォーマット】
-- 総評（1〜2文）
-- チームの強み・良かった点
-- 改善すべき課題
-- 具体的アドバイス・次へのアクション`;
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+  if(!t || !t.matches) return '';
+  let h = '<div class="print-only-match-tables">';
+  t.matches.forEach((m, idx) => {
+    let resLabel = m.result;
+    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + resLabel + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
+    const rows = calcAll(t.players, idx);
+    h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      const hasData = t.players.find(p => p.name === r.name);
+      if(!hasData || !hasData.stats[idx]) return;
+      h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
     });
-
-    const resData = await response.json();
-
-    if (!response.ok) {
-      const errorMsg = resData.error ? resData.error.message : `HTTP Error ${response.status}`;
-      throw new Error(errorMsg);
-    }
-
-    if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
-      throw new Error("APIからの応答形式が予期しないものでした。");
-    }
-
-    const aiText = resData.candidates[0].content.parts[0].text;
-
-    container.innerHTML = `
-      <div class="card" style="border: 1px solid var(--purple);">
-        <div class="card-title" style="color:var(--purple);">✨ Gemini AI戦術考察</div>
-        <div class="ai-output-box">${formatMarkdown(aiText)}</div>
-      </div>
-    `;
-  } catch (err) {
-    console.error("Gemini API Error:", err);
-    container.innerHTML = `
-      <div class="card" style="border: 1px solid var(--red);">
-        <div style="color:var(--red); font-size:13px; font-weight:bold;">分析の生成に失敗しました。</div>
-        <div style="font-size:12px; color:var(--text-danger); margin-top:6px; word-break:break-all;">
-          <strong>エラー詳細:</strong> ${err.message}
-        </div>
-      </div>
-    `;
-  }
-}
-
-function formatMarkdown(text) {
-  return text
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^#+\s*(.*)$/gm, '<strong style="font-size:14px; display:block; margin-top:8px;">$1</strong>');
-}
-
-function switchSub(tKey, subKey){
-  document.querySelectorAll('#subs_'+tKey+' .sub-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('stab_'+tKey+'_'+subKey).classList.add('active');
-  document.querySelectorAll('#subcon_'+tKey+' .sub-section').forEach(s => s.className = 'sub-section');
-  document.getElementById('sub_'+tKey+'_'+subKey).classList.add('active');
-  if(subKey==='player') renderPTable(tKey,'all');
-  setTimeout(() => { buildAllCharts(tKey); }, 50);
-}
-
-function switchT(tKey){
-  activeTournamentKey = tKey; document.querySelectorAll('.tab-wrapper').forEach(t => t.classList.remove('active'));
-  const targetTab = document.getElementById('tabwrap_'+tKey); if(targetTab) targetTab.classList.add('active');
-  document.querySelectorAll('.section').forEach(s => s.className = 'section');
-  const targetSec = document.getElementById('sec_'+tKey); if(targetSec) targetSec.className = 'section active';
-  renderPTable(tKey,'all'); setTimeout(() => { buildAllCharts(tKey); }, 80);
-}
-
-function initDashboard() {
-  var tTabs = document.getElementById('tTabs'); var tContent = document.getElementById('tContent');
-  tTabs.innerHTML = ''; tContent.innerHTML = ''; var tKeys = Object.keys(DATA);
-  if (tKeys.length === 0) {
-    tTabs.style.display = 'none'; tContent.innerHTML = '<div class="no-data-msg">大会データが登録されていません。</div>'; return;
-  } else { tTabs.style.display = 'flex'; }
-
-  tKeys.forEach(function(tKey, i){
-    var t = DATA[tKey]; var wrapper = document.createElement('div');
-    wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : ''); wrapper.id = 'tabwrap_' + tKey;
-    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
-
-    var tabEl = document.createElement('button'); tabEl.className = 'tournament-tab'; tabEl.textContent = t.label;
-    var delBtn = document.createElement('button'); delBtn.className = 'btn-delete-tab'; delBtn.innerHTML = '×';
-    const doDelete = function(e){ e.stopPropagation(); e.preventDefault(); deleteTournament(tKey, e); };
-    delBtn.onclick = delBtn.ontouchend = doDelete;
-
-    wrapper.appendChild(tabEl); wrapper.appendChild(delBtn); tTabs.appendChild(wrapper);
-
-    var secEl = document.createElement('div'); secEl.className = 'section' + (tKey === activeTournamentKey ? ' active' : ''); secEl.id = 'sec_'+tKey;
-    secEl.innerHTML = '<div class="sub-nav" id="subs_'+tKey+'"><button class="sub-btn active" id="stab_'+tKey+'_match" onclick="switchSub(\''+tKey+'\',\'match\')">試合結果</button><button class="sub-btn" id="stab_'+tKey+'_player" onclick="switchSub(\''+tKey+'\',\'player\')">選手データ</button><button class="sub-btn" id="stab_'+tKey+'_insight" onclick="switchSub(\''+tKey+'\',\'insight\')">考察</button></div>'
-      +'<div id="subcon_'+tKey+'"><div class="sub-section active" id="sub_'+tKey+'_match">'+buildMatchHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_player">'+buildPlayerHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_insight">'+buildInsightHTML(t,tKey)+'</div></div>';
-    tContent.appendChild(secEl);
+    h += '</tbody></table></div></div></div>';
   });
+  h += '</div>';
+  return h;
+}
+
+function triggerSmartPrint() {
+  const btn = document.getElementById('pdfBtn');
+  btn.innerText = "⏳ 準備中...";
+  const curKey = activeTournamentKey;
+  const printTitle = document.getElementById('printTournamentTitle');
+  if(printTitle) {
+    printTitle.textContent = (curKey === "ALL_SUMMARY") ? "全大会通算データ" : (DATA[curKey] ? DATA[curKey].label : "");
+  }
+  if (!curKey) return;
+  
+  let printContainer = document.getElementById('print_tables_' + curKey);
+  if(!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print_tables_' + curKey;
+    document.getElementById('sec_' + curKey).appendChild(printContainer);
+  }
+  printContainer.innerHTML = buildPrintOnlyMatchTablesHTML(curKey);
+
+  const subSections = document.querySelectorAll('#sec_' + curKey + ' .sub-section');
+  subSections.forEach(s => { s.style.setProperty('display', 'block', 'important'); s.style.setProperty('opacity', '1', 'important'); });
+
+  setTimeout(() => {
+    const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
+    canvases.forEach(canvas => {
+      const parent = canvas.parentNode;
+      const oldImg = parent.querySelector('.print-image-fallback');
+      if (oldImg) oldImg.remove();
+      try {
+        const imgData = canvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = imgData; img.className = 'print-image-fallback';
+        parent.appendChild(img);
+      } catch (e) {}
+    });
+    btn.innerText = "📄 PDF出力";
+    window.print();
+    setTimeout(() => {
+      const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
+      if (activeSubBtn) {
+        const subKey = activeSubBtn.id.replace('stab_' + curKey + '_', '');
+        subSections.forEach(s => { if (s.id !== 'sub_' + curKey + '_' + subKey) { s.style.removeProperty('display'); s.style.removeProperty('opacity'); } });
+      }
+      if(printContainer) printContainer.innerHTML = '';
+    }, 1000);
+  }, 800);
 }
 
 window.addEventListener('load', function(){
-  loadFromStorage(); initDashboard();
-  if (activeTournamentKey && DATA[activeTournamentKey]) { buildAllCharts(activeTournamentKey); renderPTable(activeTournamentKey, 'all'); }
+  loadFromStorage(); 
+  initDashboard();
+  switchT(activeTournamentKey || "ALL_SUMMARY");
   if (getGasUrl()) { updateGasStatus("URL設定済み", true); }
 });
 </script>
