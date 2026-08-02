@@ -101,7 +101,6 @@ body {
   color: var(--text-primary);
   text-align: left;
 }
-/* バージョン情報（他の要素と被らないようインライン配置） */
 .version-badge {
   font-size: 10px;
   font-weight: 700;
@@ -696,8 +695,8 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を被らないインライン配置で表示（v2.1.0） -->
-      <span class="version-badge">v2.1.0</span>
+      <!-- バージョン情報を v2.2.0 に更新 -->
+      <span class="version-badge">v2.2.0</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -736,7 +735,7 @@ body {
   <div id="tContent"></div>
 </div>
 
-<!-- 設定モーダル (スプレッドシート連携 + Gemini API設定 + シート保存ボタン移設) -->
+<!-- 設定モーダル (スプレッドシート連携 + Gemini API設定) -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -744,21 +743,23 @@ body {
       <button class="btn-close" onclick="closeSettingsModal()">&times;</button>
     </div>
 
-    <!-- Googleスプレッドシート連携設定（シート保存ボタンをここに設置） -->
+    <!-- Googleスプレッドシート連携設定 -->
     <div class="setting-card">
       <div class="setting-card-title">
         Googleスプレッドシート連携
         <button class="info-btn" onclick="openGasHelpModal()" title="GAS連携の手順を表示">ℹ</button>
       </div>
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.4;">
-        Apps Script の Web App URL を登録すると、登録済みの全大会・全試合データが試合別のシートとしてGoogleスプレッドシートに保存されます。
+        Apps Script の Web App URL を登録すると、スプレッドシートへの保存（書き出し）および読み込み（同期）が可能です。
       </p>
       <label style="font-size:11px; font-weight:bold; color:var(--text-secondary);">Web App URL</label>
       <input type="url" id="gasUrlInput" class="input-title-field" placeholder="https://script.google.com/macros/s/.../exec" style="margin-top:4px; margin-bottom:8px;">
       
+      <button class="btn-action-blue" style="margin-top:0; margin-bottom:8px;" onclick="saveGasUrl()">URLを保存</button>
+
       <div style="display:flex; gap:8px;">
-        <button class="btn-action-blue" style="margin-top:0; flex:1;" onclick="saveGasUrl()">URLを保存</button>
-        <button class="btn-submit" style="margin-top:0; flex:1; background:var(--green); color:#fff;" onclick="syncToSpreadsheetManual()">☁ シートに保存（同期）</button>
+        <button class="btn-submit" style="margin-top:0; flex:1; background:var(--green); color:#fff;" onclick="syncToSpreadsheetManual()">☁ シートに保存</button>
+        <button class="btn-action-blue" style="margin-top:0; flex:1; background:var(--purple);" onclick="loadFromSpreadsheetManual()">☁ シートから読み込む</button>
       </div>
 
       <div class="sync-status" id="gasSyncStatus">
@@ -799,7 +800,7 @@ body {
       </ol>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-        <strong style="font-size:12px;">GASコード（最新版）</strong>
+        <strong style="font-size:12px;">GASコード（読み書き対応最新版）</strong>
         <button class="btn-api-settings" onclick="copyGasCode()">コードをコピー</button>
       </div>
       
@@ -837,14 +838,12 @@ function doPost(e) {
   }
 }
 
-// 大会ごとに1シートを作成し、【第N試合スタッツ】ブロックを試合数分書き込む
 function writeTournamentSheet(ss, tour) {
   var label = tour.label || "試合データ";
   var sheetName = sanitizeSheetName(label);
   var matches = tour.matches || [];
   var players = tour.players || [];
 
-  // 大会名が変更された場合、旧シート名のシートを削除する
   if (tour.previousSheetName && tour.previousSheetName !== sheetName) {
     var oldSheet = ss.getSheetByName(tour.previousSheetName);
     if (oldSheet) ss.deleteSheet(oldSheet);
@@ -896,7 +895,6 @@ function sanitizeSheetName(label) {
   return name || "試合データ";
 }
 
-// "分:秒" 形式（例 "2:04"）を秒数に変換する
 function keepStrToSeconds(keep) {
   if (!keep) return 0;
   var parts = String(keep).split(":");
@@ -909,8 +907,94 @@ function keepStrToSeconds(keep) {
   return parseInt(keep, 10) || 0;
 }
 
+// 読み込み用 GET エンドポイント
 function doGet(e) {
-  return ContentService.createTextOutput("GameTrac GAS Endpoint is Active.");
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheets = ss.getSheets();
+    var tournaments = {};
+
+    sheets.forEach(function(sheet) {
+      var label = sheet.getName();
+      var data = sheet.getDataRange().getValues();
+      if (!data || data.length < 8) return;
+
+      var matches = [];
+      var playersMap = {}; 
+      var currentMatchIdx = -1;
+
+      for (var i = 0; i < data.length; i++) {
+        var row = data[i];
+        if (row[0] && String(row[0]).indexOf("【第") === 0) {
+          currentMatchIdx++;
+          var opp = "", us = 0, them = 0, result = "勝", keep = "0:00", notes = "";
+          
+          if (i + 1 < data.length) opp = data[i + 1][1] || "";
+          if (i + 2 < data.length) {
+            var resStr = String(data[i + 2][1] || "");
+            var mRes = resStr.match(/(\d+)-(\d+)\s*\((.*?)\)/);
+            if (mRes) {
+              us = parseInt(mRes[1], 10) || 0;
+              them = parseInt(mRes[2], 10) || 0;
+              result = mRes[3] || "勝";
+            }
+          }
+          if (i + 3 < data.length) {
+            var kSec = parseInt(String(data[i + 3][1] || "").replace("秒", ""), 10) || 0;
+            var mSec = Math.floor(kSec / 60);
+            var sSec = kSec % 60;
+            keep = mSec + ":" + (sSec < 10 ? "0" : "") + sSec;
+          }
+          if (i + 4 < data.length) notes = data[i + 4][1] || "";
+
+          matches.push({ opp: opp, us: us, them: them, keep: keep, result: result, notes: notes });
+        }
+
+        if (row[0] === "背番号" && row[1] === "選手名") {
+          for (var j = i + 1; j < data.length; j++) {
+            var pRow = data[j];
+            if (!pRow[1] || String(pRow[0]).indexOf("【第") === 0) break; 
+            var pName = String(pRow[1]).trim();
+            if (!pName) continue;
+
+            if (!playersMap[pName]) {
+              playersMap[pName] = { name: pName, stats: [] };
+            }
+
+            var dO = parseInt(pRow[2], 10) || 0;
+            var dX = parseInt(pRow[3], 10) || 0;
+            var iO = parseInt(pRow[4], 10) || 0;
+            var iX = parseInt(pRow[5], 10) || 0;
+            var oO = parseInt(pRow[6], 10) || 0;
+            var oX = parseInt(pRow[7], 10) || 0;
+
+            playersMap[pName].stats[currentMatchIdx] = {
+              def: [dO, dX],
+              ia: [iO, iX],
+              oa: [oO, oX]
+            };
+          }
+        }
+      }
+
+      if (matches.length > 0) {
+        var players = Object.values(playersMap);
+        tournaments[label] = {
+          label: label,
+          matches: matches,
+          players: players,
+          syncedSheetName: label
+        };
+      }
+    });
+
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", data: tournaments }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }</pre>
     </div>
     <button class="btn-action-blue" style="margin-top:10px;" onclick="closeGasHelpModal()">閉じる</button>
@@ -1014,6 +1098,12 @@ function sanitizeSheetNameJS(label) {
   return name || "試合データ";
 }
 
+// ２つのデータオブジェクト（大会データ内容）が完全一致するか検証するヘルパー
+function isDataEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// スプレッドシートへ書き出し（保存）
 async function syncToSpreadsheet() {
   const url = getGasUrl();
   if (!url) {
@@ -1047,7 +1137,6 @@ async function syncToSpreadsheet() {
       body: JSON.stringify(payload)
     });
 
-    // 同期成功後、大会名の変更検知（旧シート削除）用にシート名を記録しておく
     tournamentKeys.forEach((key) => {
       DATA[key].syncedSheetName = sanitizeSheetNameJS(DATA[key].label);
     });
@@ -1071,6 +1160,94 @@ function syncToSpreadsheetManual() {
     return;
   }
   syncToSpreadsheet();
+}
+
+// スプレッドシートからの読み込み（追加・更新・完全一致スキップ処理）
+async function loadFromSpreadsheetManual() {
+  const url = getGasUrl();
+  if(!url) {
+    alert("先にWeb App URLを入力・保存してください。");
+    openSettingsModal();
+    return;
+  }
+
+  updateGasStatus("読み込み中...", true);
+
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    const resData = await response.json();
+
+    if (resData.status !== "success" || !resData.data) {
+      throw new Error(resData.message || "データの取得に失敗しました。");
+    }
+
+    const fetchedTournaments = resData.data;
+    const fetchedKeys = Object.keys(fetchedTournaments);
+
+    if (fetchedKeys.length === 0) {
+      alert("スプレッドシート内に読み込み可能な大会データが見つかりませんでした。");
+      updateGasStatus("読み込みデータなし", true);
+      return;
+    }
+
+    let updatedCount = 0;
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    fetchedKeys.forEach(fKey => {
+      const fetchedTour = fetchedTournaments[fKey];
+      
+      // 既存データから大会名称(label)が完全一致するものを検索
+      let existingKey = Object.keys(DATA).find(k => DATA[k].label === fetchedTour.label);
+
+      if (existingKey) {
+        // 大会名称と内容が完全一致するか確認
+        const targetExisting = {
+          label: DATA[existingKey].label,
+          matches: DATA[existingKey].matches,
+          players: DATA[existingKey].players
+        };
+        const targetFetched = {
+          label: fetchedTour.label,
+          matches: fetchedTour.matches,
+          players: fetchedTour.players
+        };
+
+        if (isDataEqual(targetExisting, targetFetched)) {
+          // 内容が完全一致する場合は更新しない（スキップ）
+          skippedCount++;
+        } else {
+          // 内容が異なる場合は新しい情報に上書き更新
+          DATA[existingKey] = {
+            ...fetchedTour,
+            syncedSheetName: sanitizeSheetNameJS(fetchedTour.label)
+          };
+          updatedCount++;
+        }
+      } else {
+        // 新しい大会データとして追加
+        DATA[fKey] = {
+          ...fetchedTour,
+          syncedSheetName: sanitizeSheetNameJS(fetchedTour.label)
+        };
+        addedCount++;
+      }
+    });
+
+    saveToStorage();
+    initDashboard();
+    switchT("ALL_SUMMARY");
+
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    updateGasStatus(`シートから読み込み完了 ${nowStr}`, true);
+
+    alert(`スプレッドシートからの読み込みが完了しました！\n・新規追加: ${addedCount}件\n・上書き更新: ${updatedCount}件\n・スキップ（同一内容）: ${skippedCount}件`);
+
+  } catch (e) {
+    console.error("Spreadsheet Load Error:", e);
+    updateGasStatus("読み込み失敗", false);
+    alert("スプレッドシートからの読み込みに失敗しました。\nGASコードが最新版に更新されているか確認してください。");
+  }
 }
 
 function openSettingsModal() {
@@ -1101,16 +1278,11 @@ function loadFromStorage() {
     DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
     saveToStorage();
   }
-  const keys = Object.keys(DATA);
-  activeTournamentKey = "ALL_SUMMARY"; // 初期表示を全大会通算にするか、データがあればそれにする
+  activeTournamentKey = "ALL_SUMMARY";
 }
 
 function saveToStorage() {
   localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
-  const url = getGasUrl();
-  if (url) {
-    syncToSpreadsheet();
-  }
 }
 
 function dc(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
@@ -1173,7 +1345,6 @@ function importDataFromText() {
   }
 }
 
-// 全大会集約データの計算
 function calcAllTournamentsSummary() {
   const pMap = {};
   let totalMatches = 0;
@@ -1421,7 +1592,6 @@ function buildInsightHTML(t, tKey){
   return h;
 }
 
-// 全大会通算用画面のビルド
 function buildAllSummaryHTML() {
   const summary = calcAllTournamentsSummary();
   const diff = summary.totalUs - summary.totalThem;
@@ -1434,7 +1604,6 @@ function buildAllSummaryHTML() {
 
   h += '<div class="card" style="margin-top:12px"><div class="card-title">通算 選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_ALL_SUMMARY"></canvas></div></div>';
 
-  // 選手ごとのGemini個別考察カード
   h += '<div class="card" style="margin-top:12px"><div class="card-title">✨ 選手別Gemini個別考察</div><div class="player-card-grid">';
   summary.playerRows.forEach(p => {
     h += `<div class="player-card">
@@ -1453,7 +1622,6 @@ function buildAllSummaryHTML() {
   return h;
 }
 
-// Gemini API を呼び出して全大会のチーム戦術考察を取得
 async function generateGeminiInsight(tKey) {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -1534,7 +1702,6 @@ ${playerSummary}
   }
 }
 
-// 選手ごとのGemini個別考察生成
 async function generatePlayerGeminiInsight(playerName) {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -1631,7 +1798,6 @@ function initDashboard() {
     tTabs.style.display = 'flex'; 
   }
 
-  // --- 全大会通算タブを先頭に追加 ---
   var allWrapper = document.createElement('div');
   allWrapper.className = 'tab-wrapper all-summary-tab' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
   allWrapper.id = 'tabwrap_ALL_SUMMARY';
@@ -1649,7 +1815,6 @@ function initDashboard() {
   allSecEl.innerHTML = buildAllSummaryHTML();
   tContent.appendChild(allSecEl);
 
-  // --- 個別大会タブ ---
   tKeys.forEach(function(tKey, i){
     var t = DATA[tKey]; 
     var wrapper = document.createElement('div');
@@ -1723,221 +1888,37 @@ function sortTournamentsByDate() {
     const m = (label || '').match(/^(\d{2})(\d{2})(\d{2})/);
     if (!m) return null;
     const yy = parseInt(m[1], 10), mm = parseInt(m[2], 10), dd = parseInt(m[3], 10);
-    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
-    return (2000 + yy) * 10000 + mm * 100 + dd;
+    const fullYear = yy >= 50 ? 1900 + yy : 2000 + yy;
+    return new Date(fullYear, mm - 1, dd).getTime();
   };
 
-  const withDate = keys.filter(k => parseTournamentDate(DATA[k].label) !== null);
-  const withoutDate = keys.filter(k => parseTournamentDate(DATA[k].label) === null);
-  // 挿入順は「古い→新しい」。表示側(initDashboard)で reverse() しているため、
-  // これにより画面上は「新しい順（左が最新）」になる。日付不明の大会は表示上いちばん右に来る。
-  withDate.sort((a, b) => parseTournamentDate(DATA[a].label) - parseTournamentDate(DATA[b].label));
-  const sortedKeys = withoutDate.concat(withDate);
+  keys.sort((a, b) => {
+    const dA = parseTournamentDate(DATA[a].label);
+    const dB = parseTournamentDate(DATA[b].label);
+    if (dA !== null && dB !== null) return dA - dB;
+    if (dA !== null) return -1;
+    if (dB !== null) return 1;
+    return a.localeCompare(b);
+  });
 
-  const newData = {};
-  sortedKeys.forEach(k => { newData[k] = DATA[k]; });
-  DATA = newData;
+  const sortedData = {};
+  keys.forEach(k => { sortedData[k] = DATA[k]; });
+  DATA = sortedData;
   saveToStorage();
   initDashboard();
-  switchT(activeTournamentKey || 'ALL_SUMMARY');
-}
-
-function importPastedData() {
-  const title = document.getElementById('tournamentTitle').value.trim();
-  const text = document.getElementById('csvPasteArea').value;
-  if(!title || !text) { alert('大会名とデータテキストを入力してください。'); return; }
-  try {
-    const rawLines = text.split('\n').map(l => l.split(/\t|,/).map(c => c.trim()));
-    if (rawLines.some(l => l[0] === '対戦相手' || l[0] === '相手チーム')) { importNewFormat(title, rawLines); } else { importLegacyFormat(title, rawLines); }
-  } catch (e) { alert('データのインポートに失敗しました。'); }
-}
-
-function importNewFormat(title, lines) {
-  const blocks = []; let current = null;
-  const cleanLines = lines.map(line => 
-    line.map(cell => cell ? cell.replace(/^"|"$/g, '').trim() : '')
-  );
-
-  for (const line of cleanLines) {
-    if (line.every(c => c === '')) continue;
-    if (line[0] === '対戦相手' || line[0] === '相手チーム' || line[0].indexOf('対戦相手') !== -1) { 
-      if (current) blocks.push(current); 
-      current = [line]; 
-    } else if (current) { 
-      current.push(line); 
-    }
-  }
-  if (current) blocks.push(current);
-  if (blocks.length === 0) { alert('データブロックが見つかりません。'); return; }
-
-  const matches = []; const jerseyMap = {};
-  
-  blocks.forEach((block, matchIdx) => {
-    let opp = '不明'; let keep = '0:00'; let us = 0, them = 0; let notes = '';
-    
-    for (const line of block) {
-      if (line[0] && line[0].indexOf('対戦相手') !== -1) { opp = line[1] || '不明'; }
-      if (line[0] && line[0].indexOf('ボールキープ時間') !== -1) { 
-        const raw = line[1] || '0'; 
-        if (raw.endsWith('秒')) { 
-          const sec = parseInt(raw) || 0; 
-          keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); 
-        } else { 
-          keep = raw.replace(/^0:/, ''); 
-        } 
-      }
-      if (line[0] && line[0].indexOf('結果') !== -1) { 
-        const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); 
-        const match = scoreStr.match(/(\d+)\s*-\s*(\d+)/);
-        if (match) { us = parseInt(match[1]) || 0; them = parseInt(match[2]) || 0; } 
-        else { const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0; }
-      }
-      if (line[0] && line[0].indexOf('備考') !== -1) { notes = line[1] || ''; }
-    }
-    matches.push({ opp, us, them, keep, result: us > them ? '勝' : (us < them ? '負' : '引き分け'), notes });
-
-    for (const line of block) {
-      const jersey = line[0]; 
-      if (!jersey || isNaN(jersey) || jersey === '' || jersey === '背番号') continue;
-      const rawName = line[1] ? line[1].trim() : ''; 
-      const playerName = rawName !== '' ? rawName : '背番号' + jersey;
-      const rawNums = line.slice(2); 
-      const isDash = rawNums.every(v => v === '-' || v === ''); 
-      const nums = rawNums.map(v => parseInt(v) || 0);
-      const stat = (!isDash && nums.length >= 6) ? { def: [nums[0], nums[1]], ia: [nums[2], nums[3]], oa: [nums[4], nums[5]] } : null;
-      if (!jerseyMap[jersey]) { jerseyMap[jersey] = { name: playerName, stats: [] }; }
-      if (rawName !== '') jerseyMap[jersey].name = rawName;
-      while (jerseyMap[jersey].stats.length < matchIdx) jerseyMap[jersey].stats.push(null);
-      jerseyMap[jersey].stats.push(stat);
-    }
-  });
-
-  const totalMatches = matches.length;
-  const players = Object.keys(jerseyMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(jersey => {
-    const pData = jerseyMap[jersey]; 
-    while (pData.stats.length < totalMatches) pData.stats.push(null); 
-    return { name: pData.name, stats: pData.stats };
-  }).filter(p => p.stats.some(s => s !== null));
-
-  const newKey = 't_' + Date.now(); DATA[newKey] = { label: title, matches, players }; saveToStorage();
-  activeTournamentKey = newKey; initDashboard(); switchT(newKey);
-  document.getElementById('tournamentTitle').value = ''; document.getElementById('csvPasteArea').value = ''; toggleInputArea();
-}
-
-function importLegacyFormat(title, lines) {
-  const firstLine = lines[0] || []; const oppTeams = [];
-  for(let i=0; i<firstLine.length; i++) {
-    if(firstLine[i] && !['ディフェンス','内野アタック','外野アタック','○','×','選手','ボールキープ時間','結果（見方-相手）','結果（味方-相手）'].includes(firstLine[i])) { if(!oppTeams.includes(firstLine[i])) oppTeams.push(firstLine[i]); }
-  }
-  const matches = []; let keepTimes = []; let matchResults = [];
-  lines.forEach(line => {
-    if (line.includes('ボールキープ時間')) keepTimes = line.filter(c => c && c !== 'ボールキープ時間').map(t => t.replace(/^0:/, ''));
-    if (line.includes('結果（見方-相手）') || line.includes('結果（味方-相手）')) matchResults = line.filter(c => c && c !== '結果（見方-相手）' && c !== '結果（味方-相手）');
-  });
-  oppTeams.forEach((opp, index) => {
-    const scoreStr = matchResults[index] || "0-0"; const [us, them] = scoreStr.replace(/減|−/g, '-').split('-').map(Number);
-    let resText = "引き分け";
-    if (us > them) resText = "勝";
-    if (us < them) resText = "負";
-    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: resText, notes: "" });
-  });
-
-  const players = []; let startProcessingPlayers = false;
-  for(let i=0; i<lines.length; i++) {
-    const line = lines[i]; if(line.includes('ようた') || (line[1] && line[1] === 'ようた') || (line[0] && line[0] === 'ようた')) startProcessingPlayers = true;
-    if(line.includes('ボールキープ時間') || line.includes('結果（見方-相手）') || line.includes('結果（味方-相手）')) startProcessingPlayers = false;
-    if(startProcessingPlayers) {
-      let nameIdx = line.indexOf('ようた') !== -1 ? line.indexOf('ようた') : -1;
-      if(nameIdx === -1) { for(let k=0; k<line.length; k++) { if(line[k] && isNaN(line[k]) && !['-','○','×'].includes(line[k])) { nameIdx = k; break; } } }
-      if(nameIdx === -1) continue;
-      const name = line[nameIdx]; const stats = []; let currentIdx = nameIdx + 1;
-      for(let m=0; m<oppTeams.length; m++) {
-        const slice = line.slice(currentIdx, currentIdx + 6);
-        if(slice.includes('-') || slice.length < 6 || slice[0] === '') { stats.push(null); } else { const num = slice.map(v => parseInt(v) || 0); stats.push({ def: [num[0], num[1]], ia: [num[2], num[3]], oa: [num[4], num[5]] }); }
-        currentIdx += 6;
-      }
-      players.push({ name, stats });
-    }
-  }
-  const newKey = "t_" + Date.now(); DATA[newKey] = { label: title, matches, players }; saveToStorage();
-  activeTournamentKey = newKey; initDashboard(); switchT(newKey);
-  document.getElementById('tournamentTitle').value = ''; document.getElementById('csvPasteArea').value = ''; toggleInputArea();
-}
-
-function buildPrintOnlyMatchTablesHTML(tKey) {
-  if(tKey === "ALL_SUMMARY") return '';
-  const t = DATA[tKey];
-  if(!t || !t.matches) return '';
-  let h = '<div class="print-only-match-tables">';
-  t.matches.forEach((m, idx) => {
-    let resLabel = m.result;
-    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + resLabel + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
-    const rows = calcAll(t.players, idx);
-    h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
-    rows.forEach(r => {
-      const hasData = t.players.find(p => p.name === r.name);
-      if(!hasData || !hasData.stats[idx]) return;
-      h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
-    });
-    h += '</tbody></table></div></div></div>';
-  });
-  h += '</div>';
-  return h;
+  switchT(activeTournamentKey || "ALL_SUMMARY");
+  alert("大会を日付順に並び替えました！");
 }
 
 function triggerSmartPrint() {
-  const btn = document.getElementById('pdfBtn');
-  btn.innerText = "⏳ 準備中...";
-  const curKey = activeTournamentKey;
-  const printTitle = document.getElementById('printTournamentTitle');
-  if(printTitle) {
-    printTitle.textContent = (curKey === "ALL_SUMMARY") ? "全大会通算データ" : (DATA[curKey] ? DATA[curKey].label : "");
-  }
-  if (!curKey) return;
-  
-  let printContainer = document.getElementById('print_tables_' + curKey);
-  if(!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print_tables_' + curKey;
-    document.getElementById('sec_' + curKey).appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildPrintOnlyMatchTablesHTML(curKey);
-
-  const subSections = document.querySelectorAll('#sec_' + curKey + ' .sub-section');
-  subSections.forEach(s => { s.style.setProperty('display', 'block', 'important'); s.style.setProperty('opacity', '1', 'important'); });
-
-  setTimeout(() => {
-    const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
-    canvases.forEach(canvas => {
-      const parent = canvas.parentNode;
-      const oldImg = parent.querySelector('.print-image-fallback');
-      if (oldImg) oldImg.remove();
-      try {
-        const imgData = canvas.toDataURL('image/png');
-        const img = document.createElement('img');
-        img.src = imgData; img.className = 'print-image-fallback';
-        parent.appendChild(img);
-      } catch (e) {}
-    });
-    btn.innerText = "📄 PDF出力";
-    window.print();
-    setTimeout(() => {
-      const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
-      if (activeSubBtn) {
-        const subKey = activeSubBtn.id.replace('stab_' + curKey + '_', '');
-        subSections.forEach(s => { if (s.id !== 'sub_' + curKey + '_' + subKey) { s.style.removeProperty('display'); s.style.removeProperty('opacity'); } });
-      }
-      if(printContainer) printContainer.innerHTML = '';
-    }, 1000);
-  }, 800);
+  window.print();
 }
 
-window.addEventListener('load', function(){
-  loadFromStorage(); 
+window.onload = function() {
+  loadFromStorage();
   initDashboard();
-  switchT(activeTournamentKey || "ALL_SUMMARY");
-  if (getGasUrl()) { updateGasStatus("URL設定済み", true); }
-});
+  switchT(activeTournamentKey);
+};
 </script>
 </body>
 </html>
