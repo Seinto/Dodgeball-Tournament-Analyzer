@@ -682,8 +682,8 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を被らないインライン配置で表示（v2.0.0） -->
-      <span class="version-badge">v2.0.0</span>
+      <!-- バージョン情報を被らないインライン配置で表示（v2.0.1） -->
+      <span class="version-badge">v2.0.1</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -1605,7 +1605,7 @@ function initDashboard() {
   tTabs.innerHTML = ''; 
   tContent.innerHTML = ''; 
   
-  var tKeys = Object.keys(DATA);
+  var tKeys = Object.keys(DATA).reverse();
   if (tKeys.length === 0) {
     tTabs.style.display = 'none'; 
     tContent.innerHTML = '<div class="no-data-msg">大会データが登録されていません。</div>'; 
