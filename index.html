@@ -342,6 +342,20 @@ body {
 .tab-wrapper.active .btn-delete-tab {
   color: rgba(255,255,255,0.7);
 }
+.btn-edit-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 10px 4px 10px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-wrapper.active .btn-edit-tab {
+  color: rgba(255,255,255,0.7);
+}
 
 .section { display: none; }
 .section.active { display: block; }
@@ -682,14 +696,15 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を被らないインライン配置で表示（v2.0.1） -->
-      <span class="version-badge">v2.0.1</span>
+      <!-- バージョン情報を被らないインライン配置で表示（v2.1.0） -->
+      <span class="version-badge">v2.1.0</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
   <div class="header-actions">
     <button class="btn-pdf" id="pdfBtn" onclick="triggerSmartPrint()">📄 PDF出力</button>
     <button class="btn-share-toggle" onclick="toggleShareSection()">🔄 共有・同期</button>
+    <button class="btn-share-toggle" onclick="sortTournamentsByDate()">📅 並び替え</button>
     <button class="input-toggle" onclick="toggleInputArea()">＋ データ追加</button>
   </div>
 </div>
@@ -804,19 +819,13 @@ function doPost(e) {
         index: 1,
         label: contents.label || "試合データ",
         matches: contents.matches || [],
-        players: contents.players || []
+        players: contents.players || [],
+        previousSheetName: null
       }];
     }
 
-    tournaments.forEach(function(tour, tPos) {
-      var tIdx = tour.index || (tPos + 1);
-      var tournamentLabel = tour.label || "試合データ";
-      var matches = tour.matches || [];
-      var players = tour.players || [];
-
-      matches.forEach(function(m, idx) {
-        upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players);
-      });
+    tournaments.forEach(function(tour) {
+      writeTournamentSheet(ss, tour);
     });
 
     return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
@@ -828,86 +837,81 @@ function doPost(e) {
   }
 }
 
-function upsertMatchSheet(ss, tIdx, idx, tournamentLabel, m, players) {
-  var oppName = m.opp || ("対戦相手" + (idx + 1));
-  var sheetName = ("T" + tIdx + "-第" + (idx + 1) + "試合_vs" + oppName).substring(0, 30);
+// 大会ごとに1シートを作成し、【第N試合スタッツ】ブロックを試合数分書き込む
+function writeTournamentSheet(ss, tour) {
+  var label = tour.label || "試合データ";
+  var sheetName = sanitizeSheetName(label);
+  var matches = tour.matches || [];
+  var players = tour.players || [];
+
+  // 大会名が変更された場合、旧シート名のシートを削除する
+  if (tour.previousSheetName && tour.previousSheetName !== sheetName) {
+    var oldSheet = ss.getSheetByName(tour.previousSheetName);
+    if (oldSheet) ss.deleteSheet(oldSheet);
+  }
 
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
+  } else {
+    sheet.clearContents();
   }
 
-  var headerRows = [
-    ["大会名", tournamentLabel, "", "", "", "", "", ""],
-    ["対戦相手", oppName, "結果", m.result || "-", "スコア", (m.us || 0) + " - " + (m.them || 0), "キープ時間", m.keep || "-"],
-    ["備考", m.notes || "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    ["選手名", "DF成功", "DF失敗", "内野AT成功", "内野AT失敗", "外野AT成功", "外野AT失敗", ""]
-  ];
-  writeIfChanged(sheet, 1, 1, headerRows);
+  var rows = [];
+  matches.forEach(function(m, idx) {
+    var oppName = m.opp || ("対戦相手" + (idx + 1));
+    var resultText = m.result || ((m.us || 0) > (m.them || 0) ? "勝" : ((m.us || 0) < (m.them || 0) ? "負" : "引き分け"));
 
-  var PLAYER_START_ROW = 6;
-  var lastRow = sheet.getLastRow();
-  var existingRows = (lastRow >= PLAYER_START_ROW)
-    ? sheet.getRange(PLAYER_START_ROW, 1, lastRow - PLAYER_START_ROW + 1, 7).getValues()
-    : [];
+    rows.push(["【第 " + (idx + 1) + " 試合スタッツ】", "", "", "", "", "", "", ""]);
+    rows.push(["対戦相手", oppName, "", "", "", "", "", ""]);
+    rows.push(["結果（見方-相手）", (m.us || 0) + "-" + (m.them || 0) + " (" + resultText + ")", "", "", "", "", "", ""]);
+    rows.push(["ボールキープ時間", keepStrToSeconds(m.keep) + "秒", "", "", "", "", "", ""]);
+    rows.push(["備考", m.notes || "", "", "", "", "", "", ""]);
+    rows.push(["", "", "", "", "", "", "", ""]);
+    rows.push(["", "", "DF", "DF", "内野AT", "内野AT", "外野AT", "外野AT"]);
+    rows.push(["背番号", "選手名", "○", "×", "○", "×", "○", "×"]);
 
-  var rowByName = {};
-  existingRows.forEach(function(r, i) {
-    if (r[0]) rowByName[r[0]] = PLAYER_START_ROW + i;
-  });
+    players.forEach(function(p, pIdx) {
+      var stat = (p.stats && p.stats[idx]) ? p.stats[idx] : null;
+      var def = (stat && stat.def) || [0, 0];
+      var ia = (stat && stat.ia) || [0, 0];
+      var oa = (stat && stat.oa) || [0, 0];
+      rows.push([pIdx + 1, p.name, def[0] || 0, def[1] || 0, ia[0] || 0, ia[1] || 0, oa[0] || 0, oa[1] || 0]);
+    });
 
-  var usedNames = {};
-  var nextNewRow = PLAYER_START_ROW + existingRows.length;
-
-  players.forEach(function(p) {
-    var stat = (p.stats && p.stats[idx]) ? p.stats[idx] : null;
-    if (!stat) return;
-
-    var def = stat.def || [0, 0];
-    var ia = stat.ia || [0, 0];
-    var oa = stat.oa || [0, 0];
-    var rowValues = [p.name, def[0] || 0, def[1] || 0, ia[0] || 0, ia[1] || 0, oa[0] || 0, oa[1] || 0];
-
-    usedNames[p.name] = true;
-    var targetRow = rowByName[p.name];
-    if (targetRow) {
-      writeIfChanged(sheet, targetRow, 1, [rowValues]);
-    } else {
-      sheet.getRange(nextNewRow, 1, 1, 7).setValues([rowValues]);
-      nextNewRow++;
+    if (idx < matches.length - 1) {
+      rows.push(["", "", "", "", "", "", "", ""]);
+      rows.push(["", "", "", "", "", "", "", ""]);
     }
   });
 
-  Object.keys(rowByName).forEach(function(name) {
-    if (!usedNames[name]) {
-      sheet.getRange(rowByName[name], 1, 1, 7).clearContent();
-    }
-  });
+  if (rows.length > 0) {
+    sheet.getRange(1, 1, rows.length, 8).setValues(rows);
+  }
 }
 
-function writeIfChanged(sheet, row, col, values2D) {
-  var numRows = values2D.length;
-  var numCols = values2D[0].length;
-  var range = sheet.getRange(row, col, numRows, numCols);
-  var current = range.getValues();
+function sanitizeSheetName(label) {
+  var name = String(label || "試合データ").replace(/[\[\]\*\/\\\?:]/g, "_");
+  if (name.length > 90) name = name.substring(0, 90);
+  return name || "試合データ";
+}
 
-  var changed = false;
-  for (var r = 0; r < numRows && !changed; r++) {
-    for (var c = 0; c < numCols; c++) {
-      var curVal = (current[r][c] === null || current[r][c] === undefined) ? "" : current[r][c];
-      var newVal = (values2D[r][c] === null || values2D[r][c] === undefined) ? "" : values2D[r][c];
-      if (String(curVal) !== String(newVal)) { changed = true; break; }
-    }
+// "分:秒" 形式（例 "2:04"）を秒数に変換する
+function keepStrToSeconds(keep) {
+  if (!keep) return 0;
+  var parts = String(keep).split(":");
+  if (parts.length === 2) {
+    return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
   }
-
-  if (changed) range.setValues(values2D);
+  if (parts.length === 3) {
+    return (parseInt(parts[0], 10) || 0) * 3600 + (parseInt(parts[1], 10) || 0) * 60 + (parseInt(parts[2], 10) || 0);
+  }
+  return parseInt(keep, 10) || 0;
 }
 
 function doGet(e) {
   return ContentService.createTextOutput("GameTrac GAS Endpoint is Active.");
-}
-</pre>
+}</pre>
     </div>
     <button class="btn-action-blue" style="margin-top:10px;" onclick="closeGasHelpModal()">閉じる</button>
   </div>
@@ -1004,6 +1008,12 @@ function updateGasStatus(msg, isSuccess = true) {
   }
 }
 
+function sanitizeSheetNameJS(label) {
+  let name = (label || "試合データ").replace(/[\[\]\*\/\\\?:]/g, "_");
+  if (name.length > 90) name = name.substring(0, 90);
+  return name || "試合データ";
+}
+
 async function syncToSpreadsheet() {
   const url = getGasUrl();
   if (!url) {
@@ -1025,7 +1035,8 @@ async function syncToSpreadsheet() {
           index: tIdx + 1,
           label: t.label,
           matches: t.matches,
-          players: t.players
+          players: t.players,
+          previousSheetName: t.syncedSheetName || null
         };
       })
     };
@@ -1035,6 +1046,12 @@ async function syncToSpreadsheet() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
+
+    // 同期成功後、大会名の変更検知（旧シート削除）用にシート名を記録しておく
+    tournamentKeys.forEach((key) => {
+      DATA[key].syncedSheetName = sanitizeSheetNameJS(DATA[key].label);
+    });
+    localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
 
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     updateGasStatus(`スプレッドシートと同期済み ${nowStr}`, true);
@@ -1638,12 +1655,18 @@ function initDashboard() {
     var wrapper = document.createElement('div');
     wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : ''); 
     wrapper.id = 'tabwrap_' + tKey;
-    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab') { switchT(tKey); } };
+    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab' && e.target.className !== 'btn-edit-tab') { switchT(tKey); } };
 
     var tabEl = document.createElement('button'); 
     tabEl.className = 'tournament-tab'; 
     tabEl.textContent = t.label;
-    
+
+    var editBtn = document.createElement('button');
+    editBtn.className = 'btn-edit-tab';
+    editBtn.innerHTML = '✎';
+    const doEdit = function(e){ e.stopPropagation(); e.preventDefault(); renameTournament(tKey, e); };
+    editBtn.onclick = editBtn.ontouchend = doEdit;
+
     var delBtn = document.createElement('button'); 
     delBtn.className = 'btn-delete-tab'; 
     delBtn.innerHTML = '×';
@@ -1651,6 +1674,7 @@ function initDashboard() {
     delBtn.onclick = delBtn.ontouchend = doDelete;
 
     wrapper.appendChild(tabEl); 
+    wrapper.appendChild(editBtn);
     wrapper.appendChild(delBtn); 
     tTabs.appendChild(wrapper);
 
@@ -1675,6 +1699,47 @@ function deleteTournament(tKey, event) {
   } else {
     activeTournamentKey = null; initDashboard();
   }
+}
+
+function renameTournament(tKey, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  const t = DATA[tKey];
+  if (!t) return;
+  const newLabel = prompt('大会名を編集', t.label);
+  if (newLabel === null) return;
+  const trimmed = newLabel.trim();
+  if (!trimmed) { alert('大会名を入力してください。'); return; }
+  t.label = trimmed;
+  saveToStorage();
+  initDashboard();
+  switchT(tKey);
+}
+
+function sortTournamentsByDate() {
+  const keys = Object.keys(DATA);
+  if (keys.length === 0) return;
+
+  const parseTournamentDate = (label) => {
+    const m = (label || '').match(/^(\d{2})(\d{2})(\d{2})/);
+    if (!m) return null;
+    const yy = parseInt(m[1], 10), mm = parseInt(m[2], 10), dd = parseInt(m[3], 10);
+    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+    return (2000 + yy) * 10000 + mm * 100 + dd;
+  };
+
+  const withDate = keys.filter(k => parseTournamentDate(DATA[k].label) !== null);
+  const withoutDate = keys.filter(k => parseTournamentDate(DATA[k].label) === null);
+  // 挿入順は「古い→新しい」。表示側(initDashboard)で reverse() しているため、
+  // これにより画面上は「新しい順（左が最新）」になる。日付不明の大会は表示上いちばん右に来る。
+  withDate.sort((a, b) => parseTournamentDate(DATA[a].label) - parseTournamentDate(DATA[b].label));
+  const sortedKeys = withoutDate.concat(withDate);
+
+  const newData = {};
+  sortedKeys.forEach(k => { newData[k] = DATA[k]; });
+  DATA = newData;
+  saveToStorage();
+  initDashboard();
+  switchT(activeTournamentKey || 'ALL_SUMMARY');
 }
 
 function importPastedData() {
