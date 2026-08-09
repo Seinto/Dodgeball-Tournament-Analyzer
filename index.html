@@ -695,8 +695,8 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を v2.2.0 に更新 -->
-      <span class="version-badge">v2.2.0</span>
+      <!-- バージョン情報を v2.2.1 に更新（importPastedData欠落を修正） -->
+      <span class="version-badge">v2.2.1</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -1316,6 +1316,128 @@ function exportDataToClipboard() {
     alert("データの書き出しに失敗しました。");
     console.error(e);
   }
+}
+
+function importPastedData() {
+  const title = document.getElementById('tournamentTitle').value.trim();
+  const text = document.getElementById('csvPasteArea').value;
+  if(!title || !text) { alert('大会名とデータテキストを入力してください。'); return; }
+  try {
+    const rawLines = text.split('\n').map(l => l.split(/\t|,/).map(c => c.trim()));
+    if (rawLines.some(l => l[0] === '対戦相手' || l[0] === '相手チーム')) { importNewFormat(title, rawLines); } else { importLegacyFormat(title, rawLines); }
+  } catch (e) { alert('データのインポートに失敗しました。'); }
+}
+
+function importNewFormat(title, lines) {
+  const blocks = []; let current = null;
+  const cleanLines = lines.map(line => 
+    line.map(cell => cell ? cell.replace(/^"|"$/g, '').trim() : '')
+  );
+
+  for (const line of cleanLines) {
+    if (line.every(c => c === '')) continue;
+    if (line[0] === '対戦相手' || line[0] === '相手チーム' || line[0].indexOf('対戦相手') !== -1) { 
+      if (current) blocks.push(current); 
+      current = [line]; 
+    } else if (current) { 
+      current.push(line); 
+    }
+  }
+  if (current) blocks.push(current);
+  if (blocks.length === 0) { alert('データブロックが見つかりません。'); return; }
+
+  const matches = []; const jerseyMap = {};
+  
+  blocks.forEach((block, matchIdx) => {
+    let opp = '不明'; let keep = '0:00'; let us = 0, them = 0; let notes = '';
+    
+    for (const line of block) {
+      if (line[0] && line[0].indexOf('対戦相手') !== -1) { opp = line[1] || '不明'; }
+      if (line[0] && line[0].indexOf('ボールキープ時間') !== -1) { 
+        const raw = line[1] || '0'; 
+        if (raw.endsWith('秒')) { 
+          const sec = parseInt(raw) || 0; 
+          keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); 
+        } else { 
+          keep = raw.replace(/^0:/, ''); 
+        } 
+      }
+      if (line[0] && line[0].indexOf('結果') !== -1) { 
+        const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); 
+        const match = scoreStr.match(/(\d+)\s*-\s*(\d+)/);
+        if (match) { us = parseInt(match[1]) || 0; them = parseInt(match[2]) || 0; } 
+        else { const parts = scoreStr.split('-').map(Number); us = parts[0] || 0; them = parts[1] || 0; }
+      }
+      if (line[0] && line[0].indexOf('備考') !== -1) { notes = line[1] || ''; }
+    }
+    matches.push({ opp, us, them, keep, result: us > them ? '勝' : (us < them ? '負' : '引き分け'), notes });
+
+    for (const line of block) {
+      const jersey = line[0]; 
+      if (!jersey || isNaN(jersey) || jersey === '' || jersey === '背番号') continue;
+      const rawName = line[1] ? line[1].trim() : ''; 
+      const playerName = rawName !== '' ? rawName : '背番号' + jersey;
+      const rawNums = line.slice(2); 
+      const isDash = rawNums.every(v => v === '-' || v === ''); 
+      const nums = rawNums.map(v => parseInt(v) || 0);
+      const stat = (!isDash && nums.length >= 6) ? { def: [nums[0], nums[1]], ia: [nums[2], nums[3]], oa: [nums[4], nums[5]] } : null;
+      if (!jerseyMap[jersey]) { jerseyMap[jersey] = { name: playerName, stats: [] }; }
+      if (rawName !== '') jerseyMap[jersey].name = rawName;
+      while (jerseyMap[jersey].stats.length < matchIdx) jerseyMap[jersey].stats.push(null);
+      jerseyMap[jersey].stats.push(stat);
+    }
+  });
+
+  const totalMatches = matches.length;
+  const players = Object.keys(jerseyMap).sort((a,b)=>parseInt(a)-parseInt(b)).map(jersey => {
+    const pData = jerseyMap[jersey]; 
+    while (pData.stats.length < totalMatches) pData.stats.push(null); 
+    return { name: pData.name, stats: pData.stats };
+  }).filter(p => p.stats.some(s => s !== null));
+
+  const newKey = 't_' + Date.now(); DATA[newKey] = { label: title, matches, players }; saveToStorage();
+  activeTournamentKey = newKey; initDashboard(); switchT(newKey);
+  document.getElementById('tournamentTitle').value = ''; document.getElementById('csvPasteArea').value = ''; toggleInputArea();
+}
+
+function importLegacyFormat(title, lines) {
+  const firstLine = lines[0] || []; const oppTeams = [];
+  for(let i=0; i<firstLine.length; i++) {
+    if(firstLine[i] && !['ディフェンス','内野アタック','外野アタック','○','×','選手','ボールキープ時間','結果（見方-相手）','結果（味方-相手）'].includes(firstLine[i])) { if(!oppTeams.includes(firstLine[i])) oppTeams.push(firstLine[i]); }
+  }
+  const matches = []; let keepTimes = []; let matchResults = [];
+  lines.forEach(line => {
+    if (line.includes('ボールキープ時間')) keepTimes = line.filter(c => c && c !== 'ボールキープ時間').map(t => t.replace(/^0:/, ''));
+    if (line.includes('結果（見方-相手）') || line.includes('結果（味方-相手）')) matchResults = line.filter(c => c && c !== '結果（見方-相手）' && c !== '結果（味方-相手）');
+  });
+  oppTeams.forEach((opp, index) => {
+    const scoreStr = matchResults[index] || "0-0"; const [us, them] = scoreStr.replace(/減|−/g, '-').split('-').map(Number);
+    let resText = "引き分け";
+    if (us > them) resText = "勝";
+    if (us < them) resText = "負";
+    matches.push({ opp, us: us||0, them: them||0, keep: keepTimes[index] || "0:00", result: resText, notes: "" });
+  });
+
+  const players = []; let startProcessingPlayers = false;
+  for(let i=0; i<lines.length; i++) {
+    const line = lines[i]; if(line.includes('ようた') || (line[1] && line[1] === 'ようた') || (line[0] && line[0] === 'ようた')) startProcessingPlayers = true;
+    if(line.includes('ボールキープ時間') || line.includes('結果（見方-相手）') || line.includes('結果（味方-相手）')) startProcessingPlayers = false;
+    if(startProcessingPlayers) {
+      let nameIdx = line.indexOf('ようた') !== -1 ? line.indexOf('ようた') : -1;
+      if(nameIdx === -1) { for(let k=0; k<line.length; k++) { if(line[k] && isNaN(line[k]) && !['-','○','×'].includes(line[k])) { nameIdx = k; break; } } }
+      if(nameIdx === -1) continue;
+      const name = line[nameIdx]; const stats = []; let currentIdx = nameIdx + 1;
+      for(let m=0; m<oppTeams.length; m++) {
+        const slice = line.slice(currentIdx, currentIdx + 6);
+        if(slice.includes('-') || slice.length < 6 || slice[0] === '') { stats.push(null); } else { const num = slice.map(v => parseInt(v) || 0); stats.push({ def: [num[0], num[1]], ia: [num[2], num[3]], oa: [num[4], num[5]] }); }
+        currentIdx += 6;
+      }
+      players.push({ name, stats });
+    }
+  }
+  const newKey = "t_" + Date.now(); DATA[newKey] = { label: title, matches, players }; saveToStorage();
+  activeTournamentKey = newKey; initDashboard(); switchT(newKey);
+  document.getElementById('tournamentTitle').value = ''; document.getElementById('csvPasteArea').value = ''; toggleInputArea();
 }
 
 function importDataFromText() {
