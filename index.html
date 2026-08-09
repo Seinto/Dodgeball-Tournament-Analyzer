@@ -695,8 +695,8 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を v2.2.1 に更新（importPastedData欠落を修正） -->
-      <span class="version-badge">v2.2.1</span>
+      <!-- バージョン情報を v2.2.2 に更新（PDF出力時のグラフ描画欠落を修正） -->
+      <span class="version-badge">v2.2.2</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -2032,8 +2032,72 @@ function sortTournamentsByDate() {
   alert("大会を日付順に並び替えました！");
 }
 
+function buildPrintOnlyMatchTablesHTML(tKey) {
+  if(tKey === "ALL_SUMMARY") return '';
+  const t = DATA[tKey];
+  if(!t || !t.matches) return '';
+  let h = '<div class="print-only-match-tables">';
+  t.matches.forEach((m, idx) => {
+    let resLabel = m.result;
+    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + resLabel + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
+    const rows = calcAll(t.players, idx);
+    h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      const hasData = t.players.find(p => p.name === r.name);
+      if(!hasData || !hasData.stats[idx]) return;
+      h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
+    });
+    h += '</tbody></table></div></div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
 function triggerSmartPrint() {
-  window.print();
+  const btn = document.getElementById('pdfBtn');
+  btn.innerText = "⏳ 準備中...";
+  const curKey = activeTournamentKey;
+  const printTitle = document.getElementById('printTournamentTitle');
+  if(printTitle) {
+    printTitle.textContent = (curKey === "ALL_SUMMARY") ? "全大会通算データ" : (DATA[curKey] ? DATA[curKey].label : "");
+  }
+  if (!curKey) return;
+  
+  let printContainer = document.getElementById('print_tables_' + curKey);
+  if(!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print_tables_' + curKey;
+    document.getElementById('sec_' + curKey).appendChild(printContainer);
+  }
+  printContainer.innerHTML = buildPrintOnlyMatchTablesHTML(curKey);
+
+  const subSections = document.querySelectorAll('#sec_' + curKey + ' .sub-section');
+  subSections.forEach(s => { s.style.setProperty('display', 'block', 'important'); s.style.setProperty('opacity', '1', 'important'); });
+
+  setTimeout(() => {
+    const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
+    canvases.forEach(canvas => {
+      const parent = canvas.parentNode;
+      const oldImg = parent.querySelector('.print-image-fallback');
+      if (oldImg) oldImg.remove();
+      try {
+        const imgData = canvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = imgData; img.className = 'print-image-fallback';
+        parent.appendChild(img);
+      } catch (e) {}
+    });
+    btn.innerText = "📄 PDF出力";
+    window.print();
+    setTimeout(() => {
+      const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
+      if (activeSubBtn) {
+        const subKey = activeSubBtn.id.replace('stab_' + curKey + '_', '');
+        subSections.forEach(s => { if (s.id !== 'sub_' + curKey + '_' + subKey) { s.style.removeProperty('display'); s.style.removeProperty('opacity'); } });
+      }
+      if(printContainer) printContainer.innerHTML = '';
+    }, 1000);
+  }, 800);
 }
 
 window.onload = function() {
