@@ -695,8 +695,8 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を v2.2.2 に更新（PDF出力時のグラフ描画欠落を修正） -->
-      <span class="version-badge">v2.2.2</span>
+      <!-- バージョン情報を v2.2.3 に更新（シート保存時、未出場選手のスタッツを"-"出力に修正） -->
+      <span class="version-badge">v2.2.3</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -872,9 +872,13 @@ function writeTournamentSheet(ss, tour) {
 
     players.forEach(function(p, pIdx) {
       var stat = (p.stats && p.stats[idx]) ? p.stats[idx] : null;
-      var def = (stat && stat.def) || [0, 0];
-      var ia = (stat && stat.ia) || [0, 0];
-      var oa = (stat && stat.oa) || [0, 0];
+      if (!stat) {
+        rows.push([pIdx + 1, p.name, "-", "-", "-", "-", "-", "-"]);
+        return;
+      }
+      var def = stat.def || [0, 0];
+      var ia = stat.ia || [0, 0];
+      var oa = stat.oa || [0, 0];
       rows.push([pIdx + 1, p.name, def[0] || 0, def[1] || 0, ia[0] || 0, ia[1] || 0, oa[0] || 0, oa[1] || 0]);
     });
 
