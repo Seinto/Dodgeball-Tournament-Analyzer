@@ -695,8 +695,8 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を v2.2.3 に更新（シート保存時、未出場選手のスタッツを"-"出力に修正） -->
-      <span class="version-badge">v2.2.3</span>
+      <!-- バージョン情報を v2.2.4 に更新（シート読み込み時、全スタッツ"-"の選手を未出場として復元するよう修正） -->
+      <span class="version-badge">v2.2.4</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -965,17 +965,13 @@ function doGet(e) {
               playersMap[pName] = { name: pName, stats: [] };
             }
 
-            var dO = parseInt(pRow[2], 10) || 0;
-            var dX = parseInt(pRow[3], 10) || 0;
-            var iO = parseInt(pRow[4], 10) || 0;
-            var iX = parseInt(pRow[5], 10) || 0;
-            var oO = parseInt(pRow[6], 10) || 0;
-            var oX = parseInt(pRow[7], 10) || 0;
+            var dO = pRow[2], dX = pRow[3], iO = pRow[4], iX = pRow[5], oO = pRow[6], oX = pRow[7];
+            var isDash = [dO, dX, iO, iX, oO, oX].every(function(v) { return String(v).trim() === "-"; });
 
-            playersMap[pName].stats[currentMatchIdx] = {
-              def: [dO, dX],
-              ia: [iO, iX],
-              oa: [oO, oX]
+            playersMap[pName].stats[currentMatchIdx] = isDash ? null : {
+              def: [parseInt(dO, 10) || 0, parseInt(dX, 10) || 0],
+              ia: [parseInt(iO, 10) || 0, parseInt(iX, 10) || 0],
+              oa: [parseInt(oO, 10) || 0, parseInt(oX, 10) || 0]
             };
           }
         }
