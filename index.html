@@ -695,8 +695,7 @@ body {
   <div class="header-top">
     <div class="title-area">
       <h1>DodgeBall GameTrac</h1>
-      <!-- バージョン情報を v2.2.4 に更新（シート読み込み時、全スタッツ"-"の選手を未出場として復元するよう修正） -->
-      <span class="version-badge">v2.2.4</span>
+      <span class="version-badge">v2.3.0</span>
     </div>
     <button class="btn-api-settings" onclick="openSettingsModal()">⚙ 設定</button>
   </div>
@@ -911,7 +910,6 @@ function keepStrToSeconds(keep) {
   return parseInt(keep, 10) || 0;
 }
 
-// 読み込み用 GET エンドポイント
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1052,34 +1050,20 @@ let DATA = {};
 let activeTournamentKey = "";
 const charts = {};
 
-function getApiKey() {
-  return localStorage.getItem("GEMINI_API_KEY") || "";
-}
-
+function getApiKey() { return localStorage.getItem("GEMINI_API_KEY") || ""; }
 function saveApiKey() {
   const key = document.getElementById("apiKeyInput").value.trim();
-  if(!key) {
-    alert("Gemini APIキーを入力してください。");
-    return;
-  }
+  if(!key) { alert("Gemini APIキーを入力してください。"); return; }
   localStorage.setItem("GEMINI_API_KEY", key);
   alert("Gemini APIキーを保存しました。");
 }
 
-function getGasUrl() {
-  return localStorage.getItem("GAS_WEB_APP_URL") || "";
-}
-
+function getGasUrl() { return localStorage.getItem("GAS_WEB_APP_URL") || ""; }
 function saveGasUrl() {
   const url = document.getElementById("gasUrlInput").value.trim();
   localStorage.setItem("GAS_WEB_APP_URL", url);
-  if(url) {
-    alert("GAS Web App URLを保存しました。");
-    syncToSpreadsheet();
-  } else {
-    alert("URL設定を解除しました。");
-    updateGasStatus("未設定", false);
-  }
+  if(url) { alert("GAS Web App URLを保存しました。"); syncToSpreadsheet(); }
+  else { alert("URL設定を解除しました。"); updateGasStatus("未設定", false); }
 }
 
 function updateGasStatus(msg, isSuccess = true) {
@@ -1098,155 +1082,85 @@ function sanitizeSheetNameJS(label) {
   return name || "試合データ";
 }
 
-// ２つのデータオブジェクト（大会データ内容）が完全一致するか検証するヘルパー
-function isDataEqual(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
+function isDataEqual(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 
-// スプレッドシートへ書き出し（保存）
 async function syncToSpreadsheet() {
   const url = getGasUrl();
   if (!url) {
     alert("GoogleスプレッドシートのWeb App URLが設定されていません。\n画面右上の「⚙ 設定」からURLを入力してください。");
-    openSettingsModal();
-    return;
+    openSettingsModal(); return;
   }
-
   const tournamentKeys = Object.keys(DATA);
   if (tournamentKeys.length === 0) return;
-
   updateGasStatus("同期中...", true);
-
   try {
     const payload = {
       tournaments: tournamentKeys.map((key, tIdx) => {
         const t = DATA[key];
-        return {
-          index: tIdx + 1,
-          label: t.label,
-          matches: t.matches,
-          players: t.players,
-          previousSheetName: t.syncedSheetName || null
-        };
+        return { index: tIdx + 1, label: t.label, matches: t.matches, players: t.players, previousSheetName: t.syncedSheetName || null };
       })
     };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-
-    tournamentKeys.forEach((key) => {
-      DATA[key].syncedSheetName = sanitizeSheetNameJS(DATA[key].label);
-    });
+    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+    tournamentKeys.forEach((key) => { DATA[key].syncedSheetName = sanitizeSheetNameJS(DATA[key].label); });
     localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
-
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     updateGasStatus(`スプレッドシートと同期済み ${nowStr}`, true);
     alert("すべての大会データのスプレッドシートへの保存（同期）が完了しました！");
   } catch (e) {
     console.error("Spreadsheet Sync Error:", e);
-    updateGasStatus("同期失敗（URLまたはネットワークを確認してください）", false);
+    updateGasStatus("同期失敗", false);
     alert("同期に失敗しました。コンソールまたはURLを確認してください。");
   }
 }
 
 function syncToSpreadsheetManual() {
   const url = getGasUrl();
-  if(!url) {
-    alert("先にWeb App URLを入力・保存してください。");
-    openSettingsModal();
-    return;
-  }
+  if(!url) { alert("先にWeb App URLを入力・保存してください。"); openSettingsModal(); return; }
   syncToSpreadsheet();
 }
 
-// スプレッドシートからの読み込み（追加・更新・完全一致スキップ処理）
 async function loadFromSpreadsheetManual() {
   const url = getGasUrl();
-  if(!url) {
-    alert("先にWeb App URLを入力・保存してください。");
-    openSettingsModal();
-    return;
-  }
-
+  if(!url) { alert("先にWeb App URLを入力・保存してください。"); openSettingsModal(); return; }
   updateGasStatus("読み込み中...", true);
-
   try {
     const response = await fetch(url, { method: 'GET' });
     const resData = await response.json();
-
-    if (resData.status !== "success" || !resData.data) {
-      throw new Error(resData.message || "データの取得に失敗しました。");
-    }
+    if (resData.status !== "success" || !resData.data) throw new Error(resData.message || "データの取得に失敗しました。");
 
     const fetchedTournaments = resData.data;
     const fetchedKeys = Object.keys(fetchedTournaments);
-
     if (fetchedKeys.length === 0) {
       alert("スプレッドシート内に読み込み可能な大会データが見つかりませんでした。");
-      updateGasStatus("読み込みデータなし", true);
-      return;
+      updateGasStatus("読み込みデータなし", true); return;
     }
 
-    let updatedCount = 0;
-    let addedCount = 0;
-    let skippedCount = 0;
-
+    let updatedCount = 0, addedCount = 0, skippedCount = 0;
     fetchedKeys.forEach(fKey => {
       const fetchedTour = fetchedTournaments[fKey];
-      
-      // 既存データから大会名称(label)が完全一致するものを検索
       let existingKey = Object.keys(DATA).find(k => DATA[k].label === fetchedTour.label);
-
       if (existingKey) {
-        // 大会名称と内容が完全一致するか確認
-        const targetExisting = {
-          label: DATA[existingKey].label,
-          matches: DATA[existingKey].matches,
-          players: DATA[existingKey].players
-        };
-        const targetFetched = {
-          label: fetchedTour.label,
-          matches: fetchedTour.matches,
-          players: fetchedTour.players
-        };
-
-        if (isDataEqual(targetExisting, targetFetched)) {
-          // 内容が完全一致する場合は更新しない（スキップ）
-          skippedCount++;
-        } else {
-          // 内容が異なる場合は新しい情報に上書き更新
-          DATA[existingKey] = {
-            ...fetchedTour,
-            syncedSheetName: sanitizeSheetNameJS(fetchedTour.label)
-          };
+        const targetExisting = { label: DATA[existingKey].label, matches: DATA[existingKey].matches, players: DATA[existingKey].players };
+        const targetFetched = { label: fetchedTour.label, matches: fetchedTour.matches, players: fetchedTour.players };
+        if (isDataEqual(targetExisting, targetFetched)) { skippedCount++; }
+        else {
+          DATA[existingKey] = { ...fetchedTour, syncedSheetName: sanitizeSheetNameJS(fetchedTour.label) };
           updatedCount++;
         }
       } else {
-        // 新しい大会データとして追加
-        DATA[fKey] = {
-          ...fetchedTour,
-          syncedSheetName: sanitizeSheetNameJS(fetchedTour.label)
-        };
+        DATA[fKey] = { ...fetchedTour, syncedSheetName: sanitizeSheetNameJS(fetchedTour.label) };
         addedCount++;
       }
     });
 
-    saveToStorage();
-    initDashboard();
-    switchT("ALL_SUMMARY");
-
+    saveToStorage(); initDashboard(); switchT("ALL_SUMMARY");
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     updateGasStatus(`シートから読み込み完了 ${nowStr}`, true);
-
     alert(`スプレッドシートからの読み込みが完了しました！\n・新規追加: ${addedCount}件\n・上書き更新: ${updatedCount}件\n・スキップ（同一内容）: ${skippedCount}件`);
-
   } catch (e) {
     console.error("Spreadsheet Load Error:", e);
     updateGasStatus("読み込み失敗", false);
-    alert("スプレッドシートからの読み込みに失敗しました。\nGASコードが最新版に更新されているか確認してください。");
+    alert("スプレッドシートからの読み込みに失敗しました。");
   }
 }
 
@@ -1263,11 +1177,8 @@ function closeGeminiHelpModal() { document.getElementById("geminiHelpModal").cla
 
 function copyGasCode() {
   const code = document.getElementById("gasCodeBlock").innerText;
-  navigator.clipboard.writeText(code).then(() => {
-    alert("GASコードをクリップボードにコピーしました！");
-  }).catch(() => {
-    alert("コピーに失敗しました。直接手動でテキストを選択してください。");
-  });
+  navigator.clipboard.writeText(code).then(() => { alert("GASコードをクリップボードにコピーしました！"); })
+  .catch(() => { alert("コピーに失敗しました。直接手動でテキストを選択してください。"); });
 }
 
 function loadFromStorage() {
@@ -1281,10 +1192,7 @@ function loadFromStorage() {
   activeTournamentKey = "ALL_SUMMARY";
 }
 
-function saveToStorage() {
-  localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA));
-}
-
+function saveToStorage() { localStorage.setItem("GANBA_DASHBOARD_DATA", JSON.stringify(DATA)); }
 function dc(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
 function keepSec(s){ if(!s) return 0; const parts=s.split(":"); if(parts.length===3){ return parseInt(parts[0])*3600+parseInt(parts[1])*60+parseInt(parts[2]); }else if(parts.length===2){ return parseInt(parts[0])*60+parseInt(parts[1]); } return parseInt(s)||0; }
 function fmtSec(s){ return Math.floor(s/60)+":"+(s%60).toString().padStart(2,"0"); }
@@ -1306,16 +1214,10 @@ function exportDataToClipboard() {
   try {
     const jsonStr = JSON.stringify(DATA);
     const encodedData = btoa(unescape(encodeURIComponent(jsonStr)));
-    
     navigator.clipboard.writeText(encodedData).then(() => {
-      alert("現在のすべての大会データをクリップボードにコピーしました！\nLINEやメールなどに貼り付けて相手へ送ってください。");
-    }).catch(err => {
-      prompt("以下の共有テキストをすべて選択してコピーしてください：", encodedData);
-    });
-  } catch (e) {
-    alert("データの書き出しに失敗しました。");
-    console.error(e);
-  }
+      alert("現在のすべての大会データをクリップボードにコピーしました！");
+    }).catch(() => { prompt("以下の共有テキストをコピーしてください：", encodedData); });
+  } catch (e) { alert("データの書き出しに失敗しました。"); }
 }
 
 function importPastedData() {
@@ -1330,37 +1232,25 @@ function importPastedData() {
 
 function importNewFormat(title, lines) {
   const blocks = []; let current = null;
-  const cleanLines = lines.map(line => 
-    line.map(cell => cell ? cell.replace(/^"|"$/g, '').trim() : '')
-  );
-
+  const cleanLines = lines.map(line => line.map(cell => cell ? cell.replace(/^"|"$/g, '').trim() : ''));
   for (const line of cleanLines) {
     if (line.every(c => c === '')) continue;
     if (line[0] === '対戦相手' || line[0] === '相手チーム' || line[0].indexOf('対戦相手') !== -1) { 
-      if (current) blocks.push(current); 
-      current = [line]; 
-    } else if (current) { 
-      current.push(line); 
-    }
+      if (current) blocks.push(current); current = [line]; 
+    } else if (current) { current.push(line); }
   }
   if (current) blocks.push(current);
   if (blocks.length === 0) { alert('データブロックが見つかりません。'); return; }
 
   const matches = []; const jerseyMap = {};
-  
   blocks.forEach((block, matchIdx) => {
     let opp = '不明'; let keep = '0:00'; let us = 0, them = 0; let notes = '';
-    
     for (const line of block) {
       if (line[0] && line[0].indexOf('対戦相手') !== -1) { opp = line[1] || '不明'; }
       if (line[0] && line[0].indexOf('ボールキープ時間') !== -1) { 
         const raw = line[1] || '0'; 
-        if (raw.endsWith('秒')) { 
-          const sec = parseInt(raw) || 0; 
-          keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); 
-        } else { 
-          keep = raw.replace(/^0:/, ''); 
-        } 
+        if (raw.endsWith('秒')) { const sec = parseInt(raw) || 0; keep = Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0'); } 
+        else { keep = raw.replace(/^0:/, ''); } 
       }
       if (line[0] && line[0].indexOf('結果') !== -1) { 
         const scoreStr = (line[1] || '0-0').replace(/[−－]/g, '-'); 
@@ -1444,64 +1334,38 @@ function importDataFromText() {
   const text = document.getElementById('sharePasteArea').value.trim();
   if(!text) { alert("共有テキストが入力されていません。"); return; }
   if(!confirm("共有データを読み込みますか？\n※注意：現在この端末に保存されているデータはすべて上書きされます。")) return;
-
   try {
     const decodedStr = decodeURIComponent(escape(atob(text)));
     const parsedData = JSON.parse(decodedStr);
-    
     if (typeof parsedData === 'object' && parsedData !== null) {
-      DATA = parsedData;
-      saveToStorage();
-      activeTournamentKey = "ALL_SUMMARY";
-      initDashboard();
-      switchT("ALL_SUMMARY");
-      document.getElementById('sharePasteArea').value = '';
-      toggleShareSection();
+      DATA = parsedData; saveToStorage(); activeTournamentKey = "ALL_SUMMARY"; initDashboard(); switchT("ALL_SUMMARY");
+      document.getElementById('sharePasteArea').value = ''; toggleShareSection();
       alert("データの同期・復元が完了しました！");
-    } else {
-      alert("無効なデータ形式です。正しいテキストを貼り付けてください。");
-    }
-  } catch(e) {
-    alert("データのインポートに失敗しました。コピーしたテキストが途中で切れていないか確認してください。");
-    console.error(e);
-  }
+    } else { alert("無効なデータ形式です。"); }
+  } catch(e) { alert("データのインポートに失敗しました。"); }
 }
 
 function calcAllTournamentsSummary() {
-  const pMap = {};
-  let totalMatches = 0;
-  let wins = 0, loses = 0, draws = 0;
-  let totalUs = 0, totalThem = 0;
-
+  const pMap = {}; let totalMatches = 0, wins = 0, loses = 0, draws = 0, totalUs = 0, totalThem = 0;
   Object.keys(DATA).forEach(tKey => {
-    const t = DATA[tKey];
-    if(!t) return;
+    const t = DATA[tKey]; if(!t) return;
     totalMatches += (t.matches ? t.matches.length : 0);
     if(t.matches) {
       t.matches.forEach(m => {
-        if(m.result === '勝') wins++;
-        else if(m.result === '負') loses++;
-        else draws++;
-        totalUs += (m.us || 0);
-        totalThem += (m.them || 0);
+        if(m.result === '勝') wins++; else if(m.result === '負') loses++; else draws++;
+        totalUs += (m.us || 0); totalThem += (m.them || 0);
       });
     }
-
     if(t.players) {
       t.players.forEach(p => {
-        if(!pMap[p.name]) {
-          pMap[p.name] = { name: p.name, dO:0, dX:0, iO:0, iX:0, oO:0, oX:0, matchCount: 0 };
-        }
+        if(!pMap[p.name]) { pMap[p.name] = { name: p.name, dO:0, dX:0, iO:0, iX:0, oO:0, oX:0, matchCount: 0 }; }
         if(p.stats) {
           p.stats.forEach(s => {
             if(s) {
               pMap[p.name].matchCount++;
-              pMap[p.name].dO += (s.def ? s.def[0] : 0);
-              pMap[p.name].dX += (s.def ? s.def[1] : 0);
-              pMap[p.name].iO += (s.ia ? s.ia[0] : 0);
-              pMap[p.name].iX += (s.ia ? s.ia[1] : 0);
-              pMap[p.name].oO += (s.oa ? s.oa[0] : 0);
-              pMap[p.name].oX += (s.oa ? s.oa[1] : 0);
+              pMap[p.name].dO += (s.def ? s.def[0] : 0); pMap[p.name].dX += (s.def ? s.def[1] : 0);
+              pMap[p.name].iO += (s.ia ? s.ia[0] : 0); pMap[p.name].iX += (s.ia ? s.ia[1] : 0);
+              pMap[p.name].oO += (s.oa ? s.oa[0] : 0); pMap[p.name].oX += (s.oa ? s.oa[1] : 0);
             }
           });
         }
@@ -1565,19 +1429,10 @@ function setF(tKey, midx, btn){
 }
 
 function buildAllCharts(tKey){
-  if(tKey === "ALL_SUMMARY") {
-    buildAllSummaryCharts();
-    return;
-  }
-
+  if(tKey === "ALL_SUMMARY") { buildAllSummaryCharts(); return; }
   const t = DATA[tKey]; if(!t || !t.matches || t.matches.length === 0) return;
   dc('matchChart_'+tKey);
-  
-  const matchColors = t.matches.map(m => {
-    if(m.result === '勝') return '#378ADD';
-    if(m.result === '負') return '#85B7EB';
-    return '#6c757d';
-  });
+  const matchColors = t.matches.map(m => m.result === '勝' ? '#378ADD' : (m.result === '負' ? '#85B7EB' : '#6c757d'));
 
   charts['matchChart_'+tKey] = new Chart(document.getElementById('matchChart_'+tKey),{
     data:{
@@ -1618,7 +1473,6 @@ function buildAllCharts(tKey){
 
 function buildAllSummaryCharts() {
   const summary = calcAllTournamentsSummary();
-  
   dc('atkChart_ALL_SUMMARY');
   const atkEl = document.getElementById('atkChart_ALL_SUMMARY');
   if(atkEl) {
@@ -1660,9 +1514,7 @@ function buildMatchHTML(t, tKey){
     var badgeCls = 'badge-win';
     if(m.result === '負') badgeCls = 'badge-lose';
     if(m.result === '引き分け') badgeCls = 'badge-draw';
-    
     let noteHTML = m.notes ? '<div class="match-note">📝 ' + m.notes + '</div>' : '';
-
     h += '<div class="match-card"><div class="match-opp">vs '+m.opp+' <span class="badge '+badgeCls+'">'+m.result+'</span></div><div class="score-row"><span class="score-big" style="color:'+(m.result==='勝'?'#3B6D11':(m.result==='負'?'#A32D2D':'var(--text-primary)'))+'">'+m.us+'</span><span class="score-vs">−</span><span class="score-big" style="color:var(--text-secondary)">'+m.them+'</span></div><div class="match-keep">キープ '+m.keep+'</div>'+noteHTML+'</div>'; 
   });
   h += '</div>';
@@ -1719,13 +1571,9 @@ function buildAllSummaryHTML() {
   const diff = summary.totalUs - summary.totalThem;
 
   let h = '<div class="metrics"><div class="metric"><div class="metric-label">通算試合数</div><div class="metric-value">'+summary.totalMatches+'</div></div><div class="metric"><div class="metric-label">通算勝敗</div><div class="metric-value" style="font-size:16px"><span style="color:#27500A">'+summary.wins+'勝</span> <span style="color:#A32D2D">'+summary.loses+'敗</span>' + (summary.draws > 0 ? ' <span style="color:var(--text-secondary)">'+summary.draws+'分</span>' : '') + '</div></div><div class="metric"><div class="metric-label">通算得点</div><div class="metric-value">'+summary.totalUs+'</div></div><div class="metric"><div class="metric-label">通算失点</div><div class="metric-value">'+summary.totalThem+'</div></div><div class="metric"><div class="metric-label">通算得失点差</div><div class="metric-value" style="color:'+(diff>=0?'#27500A':'#A32D2D')+'">'+(diff>=0?'+':'')+diff+'</div></div></div>';
-
   h += '<div class="card"><div class="card-title">全大会通算 選手成績一覧</div><div id="ptbl_ALL_SUMMARY"></div></div>';
-
   h += '<div class="card" style="margin-top:12px"><div class="card-title">通算 選手別アタック・ディフェンス成功率</div><div class="legend"><span><span class="leg-box" style="background:#D85A30"></span>内野AT率</span><span><span class="leg-box" style="background:#1D9E75"></span>外野AT率</span><span><span class="leg-box" style="background:#378ADD"></span>ディフェンス率</span></div><div class="chart-container" style="height:350px"><canvas id="atkChart_ALL_SUMMARY"></canvas></div></div>';
-
   h += '<div class="card" style="margin-top:12px"><div class="card-title">通算 選手別役割分析（アタック試投 vs ディフェンス試行）</div><div class="chart-container" style="height:280px"><canvas id="roleChart_ALL_SUMMARY"></canvas></div></div>';
-
   h += '<div class="card" style="margin-top:12px"><div class="card-title">✨ 選手別Gemini個別考察</div><div class="player-card-grid">';
   summary.playerRows.forEach(p => {
     h += `<div class="player-card">
@@ -1740,25 +1588,29 @@ function buildAllSummaryHTML() {
     </div>`;
   });
   h += '</div></div>';
-
   return h;
+}
+
+function formatMarkdown(txt) {
+  if(!txt) return '';
+  return txt
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
 }
 
 async function generateGeminiInsight(tKey) {
   const apiKey = getApiKey();
   if (!apiKey) {
     alert("Gemini APIキーが設定されていません。画面右上の「⚙ 設定」からキーを入力してください。");
-    openSettingsModal();
-    return;
+    openSettingsModal(); return;
   }
-
   const container = document.getElementById('ai_insight_container_' + tKey);
   container.innerHTML = '<div class="card"><div style="text-align:center; padding:16px; font-size:13px; color:var(--text-secondary);">⏳ Geminiがデータを分析中...</div></div>';
 
-  const t = DATA[tKey];
-  if (!t) return;
+  const t = DATA[tKey]; if (!t) return;
   const rows = calcAll(t.players, "all");
-  
   const matchSummary = t.matches.map(m => `・vs ${m.opp}: ${m.result} (${m.us}-${m.them}), キープ:${m.keep}`).join('\n');
   const playerSummary = rows.map(r => `・${r.name}: アタック試投数=${r.ta}, DF率=${r.dr !== null ? r.dr + '%' : 'データなし'}, 内野AT率=${r.ir !== null ? r.ir + '%' : 'データなし'}, 外野AT率=${r.or !== null ? r.or + '%' : 'データなし'}`).join('\n');
 
@@ -1784,27 +1636,17 @@ ${playerSummary}
 - 具体的アドバイス・次へのアクション`;
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
     });
-
     const resData = await response.json();
-
-    if (!response.ok) {
-      const errorMsg = resData.error ? resData.error.message : `HTTP Error ${response.status}`;
-      throw new Error(errorMsg);
-    }
-
-    if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
-      throw new Error("APIからの応答形式が予期しないものでした。");
-    }
+    if (!response.ok) throw new Error(resData.error ? resData.error.message : `HTTP Error ${response.status}`);
+    if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) throw new Error("応答の取得に失敗しました。");
 
     const aiText = resData.candidates[0].content.parts[0].text;
-
     container.innerHTML = `
       <div class="card" style="border: 1px solid var(--purple);">
         <div class="card-title" style="color:var(--purple);">✨ Gemini AI戦術考察</div>
@@ -1815,212 +1657,203 @@ ${playerSummary}
     console.error("Gemini API Error:", err);
     container.innerHTML = `
       <div class="card" style="border: 1px solid var(--red);">
-        <div style="color:var(--red); font-size:13px; font-weight:bold;">分析の生成に失敗しました。</div>
-        <div style="font-size:12px; color:var(--text-danger); margin-top:6px; word-break:break-all;">
-          <strong>エラー詳細:</strong> ${err.message}
-        </div>
+        <div style="color:var(--text-danger); font-size:13px; font-weight:bold;">⚠️ AI考察の生成に失敗しました</div>
+        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">${err.message}</div>
       </div>
     `;
   }
 }
 
-async function generatePlayerGeminiInsight(playerName) {
+async function generatePlayerGeminiInsight(pName) {
   const apiKey = getApiKey();
   if (!apiKey) {
     alert("Gemini APIキーが設定されていません。画面右上の「⚙ 設定」からキーを入力してください。");
-    openSettingsModal();
+    openSettingsModal(); return;
+  }
+
+  const box = document.getElementById('player_ai_box_' + pName);
+  if(!box) return;
+  box.innerHTML = '<div style="padding:8px 0; color:var(--text-secondary);">⏳ 分析中...</div>';
+
+  const summary = calcAllTournamentsSummary();
+  const pData = summary.playerRows.find(r => r.name === pName);
+  if(!pData) {
+    box.innerHTML = '<div style="color:var(--text-danger);">データが見つかりません</div>';
     return;
   }
 
-  const box = document.getElementById(`player_ai_box_${playerName}`);
-  if(!box) return;
-  box.innerHTML = '<div style="color:var(--text-secondary); padding:6px 0;">⏳ 考察を生成中...</div>';
+  const promptText = `あなたはドッジボールの優秀な監督・コーチです。
+以下の選手データ（全大会通算）をもとに、この選手の強み、プレイ傾向、今後の成長に向けた具体的で温かいアドバイスを150〜200文字程度でコンパクトにまとめてください。
 
-  const summary = calcAllTournamentsSummary();
-  const pData = summary.playerRows.find(r => r.name === playerName);
-  if(!pData) return;
-
-  const promptText = `あなたは小・中学生ドッジボールの優しい温かい名監督・コーチです。
-選手「${pData.name}」の全大会通算成績データをもとに、この選手の強み・良い点、さらに成長するための具体的なアドバイス（得意なプレースタイルや意識すべき練習ポイント）を、選手本人が読んでモチベーションが上がるように簡潔に（200文字程度で）まとめてください。
-
-【選手通算データ】
-・選手名: ${pData.name}
-・通算出場試合数: ${pData.matchCount}試合
-・ディフェンス成功数/試行数: ${pData.dO}/${pData.dO+pData.dX} (成功率: ${pData.dr !== null ? pData.dr + '%' : 'データなし'})
-・内野アタック成功数/試投数: ${pData.iO}/${pData.iO+pData.iX} (成功率: ${pData.ir !== null ? pData.ir + '%' : 'データなし'})
-・外野アタック成功数/試投数: ${pData.oO}/${pData.oO+pData.oX} (成功率: ${pData.or !== null ? pData.or + '%' : 'データなし'})
-・総アタック試投数: ${pData.ta}回`;
+【選手名】${pName}
+【出場試合数】${pData.matchCount}試合
+【ディフェンス】成功:${pData.dO}回 / 試行:${pData.dO+pData.dX}回 (成功率:${pData.dr !== null ? pData.dr + '%' : 'データなし'})
+【内野アタック】成功:${pData.iO}回 / 試行:${pData.iO+pData.iX}回 (成功率:${pData.ir !== null ? pData.ir + '%' : 'データなし'})
+【外野アタック】成功:${pData.oO}回 / 試行:${pData.oO+pData.oX}回 (成功率:${pData.or !== null ? pData.or + '%' : 'データなし'})
+【総アタック試投数】${pData.ta}回`;
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
     });
-
     const resData = await response.json();
-    if (!response.ok) throw new Error(resData.error ? resData.error.message : `HTTP Error ${response.status}`);
+    if (!response.ok) throw new Error(resData.error ? resData.error.message : `Error ${response.status}`);
     const aiText = resData.candidates[0].content.parts[0].text;
-
-    box.innerHTML = `
-      <div class="ai-output-box" style="margin-top:6px; background:var(--bg-primary); border:1px solid var(--purple);">
-        ${formatMarkdown(aiText)}
-      </div>
-    `;
+    box.innerHTML = `<div class="ai-output-box" style="margin-top:6px; font-size:12px; border-left:3px solid var(--purple);">${formatMarkdown(aiText)}</div>`;
   } catch(err) {
-    console.error("Player Gemini API Error:", err);
-    box.innerHTML = `<div style="color:var(--red); font-size:11px; margin-top:4px;">考察の生成に失敗しました。</div>`;
+    console.error("Player AI Error:", err);
+    box.innerHTML = `<div style="color:var(--text-danger); font-size:11px;">⚠️ エラー: ${err.message}</div>`;
   }
-}
-
-function formatMarkdown(text) {
-  return text
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^#+\s*(.*)$/gm, '<strong style="font-size:13px; display:block; margin-top:6px;">$1</strong>');
-}
-
-function switchSub(tKey, subKey){
-  document.querySelectorAll('#subs_'+tKey+' .sub-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('stab_'+tKey+'_'+subKey).classList.add('active');
-  document.querySelectorAll('#subcon_'+tKey+' .sub-section').forEach(s => s.className = 'sub-section');
-  document.getElementById('sub_'+tKey+'_'+subKey).classList.add('active');
-  if(subKey==='player') renderPTable(tKey,'all');
-  setTimeout(() => { buildAllCharts(tKey); }, 50);
-}
-
-function switchT(tKey){
-  activeTournamentKey = tKey; 
-  document.querySelectorAll('.tab-wrapper').forEach(t => t.classList.remove('active'));
-  const targetTab = document.getElementById('tabwrap_'+tKey); 
-  if(targetTab) targetTab.classList.add('active');
-  
-  document.querySelectorAll('.section').forEach(s => s.className = 'section');
-  const targetSec = document.getElementById('sec_'+tKey); 
-  if(targetSec) targetSec.className = 'section active';
-  
-  renderPTable(tKey,'all'); 
-  setTimeout(() => { buildAllCharts(tKey); }, 80);
 }
 
 function initDashboard() {
-  var tTabs = document.getElementById('tTabs'); 
-  var tContent = document.getElementById('tContent');
-  tTabs.innerHTML = ''; 
-  tContent.innerHTML = ''; 
+  const tabsContainer = document.getElementById('tTabs');
+  const contentContainer = document.getElementById('tContent');
+  if(!tabsContainer || !contentContainer) return;
+
+  tabsContainer.innerHTML = '';
+  contentContainer.innerHTML = '';
+
+  const allSummaryTabWrapper = document.createElement('div');
+  allSummaryTabWrapper.className = 'tab-wrapper all-summary-tab' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
+  allSummaryTabWrapper.id = 'tab_ALL_SUMMARY';
   
-  var tKeys = Object.keys(DATA).reverse();
-  if (tKeys.length === 0) {
-    tTabs.style.display = 'none'; 
-    tContent.innerHTML = '<div class="no-data-msg">大会データが登録されていません。</div>'; 
-    return;
-  } else { 
-    tTabs.style.display = 'flex'; 
-  }
+  const allSummaryTabBtn = document.createElement('button');
+  allSummaryTabBtn.className = 'tournament-tab';
+  allSummaryTabBtn.innerText = '📊 全通算成績';
+  allSummaryTabBtn.onclick = () => switchT('ALL_SUMMARY');
+  allSummaryTabWrapper.appendChild(allSummaryTabBtn);
+  tabsContainer.appendChild(allSummaryTabWrapper);
 
-  var allWrapper = document.createElement('div');
-  allWrapper.className = 'tab-wrapper all-summary-tab' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
-  allWrapper.id = 'tabwrap_ALL_SUMMARY';
-  allWrapper.onclick = function(){ switchT('ALL_SUMMARY'); };
-  
-  var allTabBtn = document.createElement('button');
-  allTabBtn.className = 'tournament-tab';
-  allTabBtn.textContent = '📊 全大会通算';
-  allWrapper.appendChild(allTabBtn);
-  tTabs.appendChild(allWrapper);
+  const keys = Object.keys(DATA);
+  keys.forEach(key => {
+    const t = DATA[key];
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tab-wrapper' + (key === activeTournamentKey ? ' active' : '');
+    wrapper.id = 'tab_' + key;
 
-  var allSecEl = document.createElement('div');
-  allSecEl.className = 'section' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
-  allSecEl.id = 'sec_ALL_SUMMARY';
-  allSecEl.innerHTML = buildAllSummaryHTML();
-  tContent.appendChild(allSecEl);
+    const tabBtn = document.createElement('button');
+    tabBtn.className = 'tournament-tab';
+    tabBtn.innerText = t.label;
+    tabBtn.onclick = () => switchT(key);
 
-  tKeys.forEach(function(tKey, i){
-    var t = DATA[tKey]; 
-    var wrapper = document.createElement('div');
-    wrapper.className = 'tab-wrapper' + (tKey === activeTournamentKey ? ' active' : ''); 
-    wrapper.id = 'tabwrap_' + tKey;
-    wrapper.onclick = wrapper.ontouchend = function(e){ if(e.target.className !== 'btn-delete-tab' && e.target.className !== 'btn-edit-tab') { switchT(tKey); } };
-
-    var tabEl = document.createElement('button'); 
-    tabEl.className = 'tournament-tab'; 
-    tabEl.textContent = t.label;
-
-    var editBtn = document.createElement('button');
+    const editBtn = document.createElement('button');
     editBtn.className = 'btn-edit-tab';
-    editBtn.innerHTML = '✎';
-    const doEdit = function(e){ e.stopPropagation(); e.preventDefault(); renameTournament(tKey, e); };
-    editBtn.onclick = editBtn.ontouchend = doEdit;
+    editBtn.innerHTML = '✏️';
+    editBtn.onclick = (e) => { e.stopPropagation(); editTournament(key); };
 
-    var delBtn = document.createElement('button'); 
-    delBtn.className = 'btn-delete-tab'; 
-    delBtn.innerHTML = '×';
-    const doDelete = function(e){ e.stopPropagation(); e.preventDefault(); deleteTournament(tKey, e); };
-    delBtn.onclick = delBtn.ontouchend = doDelete;
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-delete-tab';
+    delBtn.innerHTML = '&times;';
+    delBtn.onclick = (e) => { e.stopPropagation(); deleteTournament(key); };
 
-    wrapper.appendChild(tabEl); 
+    wrapper.appendChild(tabBtn);
     wrapper.appendChild(editBtn);
-    wrapper.appendChild(delBtn); 
-    tTabs.appendChild(wrapper);
-
-    var secEl = document.createElement('div'); 
-    secEl.className = 'section' + (tKey === activeTournamentKey ? ' active' : ''); 
-    secEl.id = 'sec_'+tKey;
-    secEl.innerHTML = '<div class="sub-nav" id="subs_'+tKey+'"><button class="sub-btn active" id="stab_'+tKey+'_match" onclick="switchSub(\''+tKey+'\',\'match\')">試合結果</button><button class="sub-btn" id="stab_'+tKey+'_player" onclick="switchSub(\''+tKey+'\',\'player\')">選手データ</button><button class="sub-btn" id="stab_'+tKey+'_insight" onclick="switchSub(\''+tKey+'\',\'insight\')">考察</button></div>'
-      +'<div id="subcon_'+tKey+'"><div class="sub-section active" id="sub_'+tKey+'_match">'+buildMatchHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_player">'+buildPlayerHTML(t,tKey)+'</div><div class="sub-section" id="sub_'+tKey+'_insight">'+buildInsightHTML(t,tKey)+'</div></div>';
-    tContent.appendChild(secEl);
+    wrapper.appendChild(delBtn);
+    tabsContainer.appendChild(wrapper);
   });
-}
 
-function deleteTournament(tKey, event) {
-  if (event) { event.stopPropagation(); event.preventDefault(); }
-  if (!confirm(`「${DATA[tKey] ? DATA[tKey].label : "この大会"}」のデータを削除しますか？`)) return;
-  dc('matchChart_' + tKey); dc('atkChart_' + tKey); dc('scatterChart_' + tKey); dc('roleChart_' + tKey);
-  delete DATA[tKey]; saveToStorage();
-  const remainingKeys = Object.keys(DATA);
-  if (remainingKeys.length > 0) {
-    activeTournamentKey = "ALL_SUMMARY";
-    initDashboard(); switchT("ALL_SUMMARY");
-  } else {
-    activeTournamentKey = null; initDashboard();
+  const summarySec = document.createElement('div');
+  summarySec.className = 'section' + (activeTournamentKey === 'ALL_SUMMARY' ? ' active' : '');
+  summarySec.id = 'sec_ALL_SUMMARY';
+  summarySec.innerHTML = buildAllSummaryHTML();
+  contentContainer.appendChild(summarySec);
+
+  keys.forEach(key => {
+    const t = DATA[key];
+    const sec = document.createElement('div');
+    sec.className = 'section' + (key === activeTournamentKey ? ' active' : '');
+    sec.id = 'sec_' + key;
+
+    let h = `<div class="sub-nav">
+      <button class="sub-btn active" id="sbtn_match_${key}" onclick="switchSub('${key}', 'match')">試合結果</button>
+      <button class="sub-btn" id="sbtn_player_${key}" onclick="switchSub('${key}', 'player')">選手成績</button>
+      <button class="sub-btn" id="sbtn_insight_${key}" onclick="switchSub('${key}', 'insight')">戦術考察</button>
+    </div>`;
+
+    h += `<div class="sub-section active" id="subcon_match_${key}">${buildMatchHTML(t, key)}</div>`;
+    h += `<div class="sub-section" id="subcon_player_${key}">${buildPlayerHTML(t, key)}</div>`;
+    h += `<div class="sub-section" id="subcon_insight_${key}">${buildInsightHTML(t, key)}</div>`;
+
+    sec.innerHTML = h;
+    contentContainer.appendChild(sec);
+  });
+
+  if (activeTournamentKey === 'ALL_SUMMARY') {
+    renderPTable('ALL_SUMMARY', 'all');
+    buildAllSummaryCharts();
+  } else if (DATA[activeTournamentKey]) {
+    renderPTable(activeTournamentKey, 'all');
+    buildAllCharts(activeTournamentKey);
   }
 }
 
-function renameTournament(tKey, event) {
-  if (event) { event.stopPropagation(); event.preventDefault(); }
-  const t = DATA[tKey];
-  if (!t) return;
-  const newLabel = prompt('大会名を編集', t.label);
-  if (newLabel === null) return;
-  const trimmed = newLabel.trim();
-  if (!trimmed) { alert('大会名を入力してください。'); return; }
-  t.label = trimmed;
-  saveToStorage();
-  initDashboard();
-  switchT(tKey);
+function switchT(key) {
+  activeTournamentKey = key;
+  document.querySelectorAll('.tab-wrapper').forEach(w => w.classList.remove('active'));
+  const activeTab = document.getElementById('tab_' + key);
+  if (activeTab) activeTab.classList.add('active');
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const activeSec = document.getElementById('sec_' + key);
+  if (activeSec) activeSec.classList.add('active');
+
+  if (key === 'ALL_SUMMARY') {
+    renderPTable('ALL_SUMMARY', 'all');
+    buildAllSummaryCharts();
+  } else if (DATA[key]) {
+    switchSub(key, 'match');
+  }
+}
+
+function switchSub(tKey, subName) {
+  const subBtns = document.querySelectorAll(`#sec_${tKey} .sub-btn`);
+  subBtns.forEach(b => b.classList.remove('active'));
+  const targetBtn = document.getElementById(`sbtn_${subName}_${tKey}`);
+  if (targetBtn) targetBtn.classList.add('active');
+
+  const subCons = document.querySelectorAll(`#sec_${tKey} .sub-section`);
+  subCons.forEach(c => c.classList.remove('active'));
+  const targetCon = document.getElementById(`subcon_${subName}_${tKey}`);
+  if (targetCon) targetCon.classList.add('active');
+
+  if (subName === 'player' || subName === 'insight' || subName === 'match') {
+    renderPTable(tKey, 'all');
+    buildAllCharts(tKey);
+  }
+}
+
+function deleteTournament(key) {
+  if (!DATA[key]) return;
+  if (confirm(`大会「${DATA[key].label}」を削除してもよろしいですか？`)) {
+    delete DATA[key];
+    saveToStorage();
+    activeTournamentKey = "ALL_SUMMARY";
+    initDashboard();
+    switchT("ALL_SUMMARY");
+  }
+}
+
+function editTournament(key) {
+  if (!DATA[key]) return;
+  const newTitle = prompt("大会名称を変更してください：", DATA[key].label);
+  if (newTitle && newTitle.trim() !== "") {
+    DATA[key].label = newTitle.trim();
+    saveToStorage();
+    initDashboard();
+    switchT(key);
+  }
 }
 
 function sortTournamentsByDate() {
   const keys = Object.keys(DATA);
-  if (keys.length === 0) return;
-
-  const parseTournamentDate = (label) => {
-    const m = (label || '').match(/^(\d{2})(\d{2})(\d{2})/);
-    if (!m) return null;
-    const yy = parseInt(m[1], 10), mm = parseInt(m[2], 10), dd = parseInt(m[3], 10);
-    const fullYear = yy >= 50 ? 1900 + yy : 2000 + yy;
-    return new Date(fullYear, mm - 1, dd).getTime();
-  };
-
   keys.sort((a, b) => {
-    const dA = parseTournamentDate(DATA[a].label);
-    const dB = parseTournamentDate(DATA[b].label);
-    if (dA !== null && dB !== null) return dA - dB;
-    if (dA !== null) return -1;
-    if (dB !== null) return 1;
-    return a.localeCompare(b);
+    const labelA = DATA[a].label;
+    const labelB = DATA[b].label;
+    return labelA.localeCompare(labelB, 'ja', { numeric: true });
   });
 
   const sortedData = {};
@@ -2028,83 +1861,23 @@ function sortTournamentsByDate() {
   DATA = sortedData;
   saveToStorage();
   initDashboard();
-  switchT(activeTournamentKey || "ALL_SUMMARY");
-  alert("大会を日付順に並び替えました！");
-}
-
-function buildPrintOnlyMatchTablesHTML(tKey) {
-  if(tKey === "ALL_SUMMARY") return '';
-  const t = DATA[tKey];
-  if(!t || !t.matches) return '';
-  let h = '<div class="print-only-match-tables">';
-  t.matches.forEach((m, idx) => {
-    let resLabel = m.result;
-    h += '<div class="print-match-page"><div class="print-match-title">試合別選手データ：vs ' + m.opp + ' (' + resLabel + ' ' + m.us + '-' + m.them + ')</div><div class="card">';
-    const rows = calcAll(t.players, idx);
-    h += '<div class="table-responsive"><table class="player-table"><thead><tr><th class="sticky-col" style="width:100px">選手</th><th style="width:50px;text-align:right">DF</th><th style="width:110px">DF率</th><th style="width:50px;text-align:right">内AT</th><th style="width:110px">内AT率</th><th style="width:50px;text-align:right">外AT</th><th style="width:110px">外AT率</th></tr></thead><tbody>';
-    rows.forEach(r => {
-      const hasData = t.players.find(p => p.name === r.name);
-      if(!hasData || !hasData.stats[idx]) return;
-      h += '<tr><td class="sticky-col">'+r.name+'</td><td class="num">'+r.dO+'/'+(r.dO+r.dX)+'</td><td>'+rateBar(r.dr,'#378ADD')+'</td><td class="num">'+r.iO+'/'+(r.iO+r.iX)+'</td><td>'+rateBar(r.ir,'#D85A30')+'</td><td class="num">'+r.oO+'/'+(r.oO+r.oX)+'</td><td>'+rateBar(r.or,'#1D9E75')+'</td></tr>';
-    });
-    h += '</tbody></table></div></div></div>';
-  });
-  h += '</div>';
-  return h;
+  switchT(activeTournamentKey);
 }
 
 function triggerSmartPrint() {
-  const btn = document.getElementById('pdfBtn');
-  btn.innerText = "⏳ 準備中...";
-  const curKey = activeTournamentKey;
-  const printTitle = document.getElementById('printTournamentTitle');
-  if(printTitle) {
-    printTitle.textContent = (curKey === "ALL_SUMMARY") ? "全大会通算データ" : (DATA[curKey] ? DATA[curKey].label : "");
+  if (activeTournamentKey === 'ALL_SUMMARY') {
+    document.getElementById('printTournamentTitle').innerText = "全大会通算成績レポート";
+  } else if (DATA[activeTournamentKey]) {
+    document.getElementById('printTournamentTitle').innerText = DATA[activeTournamentKey].label + " 成績レポート";
   }
-  if (!curKey) return;
-  
-  let printContainer = document.getElementById('print_tables_' + curKey);
-  if(!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print_tables_' + curKey;
-    document.getElementById('sec_' + curKey).appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildPrintOnlyMatchTablesHTML(curKey);
-
-  const subSections = document.querySelectorAll('#sec_' + curKey + ' .sub-section');
-  subSections.forEach(s => { s.style.setProperty('display', 'block', 'important'); s.style.setProperty('opacity', '1', 'important'); });
-
-  setTimeout(() => {
-    const canvases = document.querySelectorAll('#sec_' + curKey + ' canvas');
-    canvases.forEach(canvas => {
-      const parent = canvas.parentNode;
-      const oldImg = parent.querySelector('.print-image-fallback');
-      if (oldImg) oldImg.remove();
-      try {
-        const imgData = canvas.toDataURL('image/png');
-        const img = document.createElement('img');
-        img.src = imgData; img.className = 'print-image-fallback';
-        parent.appendChild(img);
-      } catch (e) {}
-    });
-    btn.innerText = "📄 PDF出力";
-    window.print();
-    setTimeout(() => {
-      const activeSubBtn = document.querySelector('#subs_' + curKey + ' .sub-btn.active');
-      if (activeSubBtn) {
-        const subKey = activeSubBtn.id.replace('stab_' + curKey + '_', '');
-        subSections.forEach(s => { if (s.id !== 'sub_' + curKey + '_' + subKey) { s.style.removeProperty('display'); s.style.removeProperty('opacity'); } });
-      }
-      if(printContainer) printContainer.innerHTML = '';
-    }, 1000);
-  }, 800);
+  window.print();
 }
 
-window.onload = function() {
+window.addEventListener('DOMContentLoaded', () => {
   loadFromStorage();
   initDashboard();
-  switchT(activeTournamentKey);
-};
+  switchT("ALL_SUMMARY");
+});
 </script>
 </body>
 </html>
